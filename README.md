@@ -10,6 +10,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Conexion Wi-Fi operativa tras reinicios.
 - Suspension, hibernacion y accion de cierre de tapa desactivadas.
 - Pruebas SMART extendidas completadas sin errores en el SSD y el HDD.
+- HDD de 1 TB preparado en ext4 y montado automaticamente en `/srv/data`.
 
 ## Hardware base
 

@@ -12,6 +12,8 @@
 8. Se activo UFW permitiendo solo OpenSSH.
 9. Se desactivaron suspension, hibernacion y la accion de cierre de tapa.
 10. Se completaron pruebas SMART extendidas en ambos discos sin errores.
+11. Se formateo el HDD de 1 TB en ext4 con la etiqueta `homelab-data`.
+12. Se configuro su montaje automatico en `/srv/data` y se verifico despues de reiniciar.
 
 ## Aprendizajes
 
@@ -23,4 +25,4 @@
 
 ## Siguiente paso
 
-Preparar el HDD de 1 TB con un sistema de archivos Linux y un montaje persistente, despues de verificar nuevamente su identificador.
+Reservar una direccion IP estable y comenzar la plataforma de servicios con Docker.

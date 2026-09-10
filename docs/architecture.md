@@ -21,9 +21,9 @@ Servidor Ubuntu
 ## Almacenamiento
 
 - SSD de 128 GB: sistema operativo y software.
-- HDD de 1 TB: datos persistentes, metricas y futuras copias de seguridad.
+- HDD de 1 TB: datos persistentes, metricas y futuras copias de seguridad; montado en `/srv/data`.
 
-Las pruebas SMART extendidas del SSD y del HDD finalizaron sin errores. El HDD queda pendiente de formateado y montaje persistente.
+Las pruebas SMART extendidas del SSD y del HDD finalizaron sin errores. El HDD utiliza ext4 y se monta automaticamente mediante UUID.
 
 ## Evolucion prevista
 
