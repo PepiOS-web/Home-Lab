@@ -7,7 +7,7 @@
 - [x] Activar UFW y permitir OpenSSH.
 - [x] Configurar funcionamiento sin suspension.
 - [x] Configurar conexion Wi-Fi.
-- [ ] Completar pruebas SMART extendidas.
+- [x] Completar pruebas SMART extendidas.
 - [ ] Reservar una IP estable en el router.
 - [ ] Revisar y preparar el HDD de 1 TB.
 

@@ -11,7 +11,7 @@
 7. Se creo una clave Ed25519 protegida por frase de paso.
 8. Se activo UFW permitiendo solo OpenSSH.
 9. Se desactivaron suspension, hibernacion y la accion de cierre de tapa.
-10. Se iniciaron pruebas SMART extendidas en ambos discos.
+10. Se completaron pruebas SMART extendidas en ambos discos sin errores.
 
 ## Aprendizajes
 
@@ -23,4 +23,4 @@
 
 ## Siguiente paso
 
-Revisar el resultado de las pruebas SMART. Si el HDD esta sano, prepararlo con un sistema de archivos Linux y un montaje persistente.
+Preparar el HDD de 1 TB con un sistema de archivos Linux y un montaje persistente, despues de verificar nuevamente su identificador.

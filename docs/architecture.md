@@ -23,7 +23,7 @@ Servidor Ubuntu
 - SSD de 128 GB: sistema operativo y software.
 - HDD de 1 TB: datos persistentes, metricas y futuras copias de seguridad.
 
-El HDD no se preparara hasta completar y revisar sus pruebas SMART.
+Las pruebas SMART extendidas del SSD y del HDD finalizaron sin errores. El HDD queda pendiente de formateado y montaje persistente.
 
 ## Evolucion prevista
 

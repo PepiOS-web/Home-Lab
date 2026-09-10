@@ -9,7 +9,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Firewall UFW activo y limitado inicialmente a OpenSSH.
 - Conexion Wi-Fi operativa tras reinicios.
 - Suspension, hibernacion y accion de cierre de tapa desactivadas.
-- Pruebas SMART extendidas en curso para el SSD y el HDD.
+- Pruebas SMART extendidas completadas sin errores en el SSD y el HDD.
 
 ## Hardware base
 
