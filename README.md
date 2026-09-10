@@ -1,4 +1,4 @@
-# HomeLab Guardian
+# HomeLab
 
 Proyecto personal para convertir un portatil reutilizado en un servidor domestico seguro, monitorizado y ampliable. El objetivo final es integrar sistemas, redes, ciberseguridad, sensores electronicos y deteccion de anomalias mediante IA.
 
