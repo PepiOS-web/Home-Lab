@@ -22,4 +22,12 @@ Por el momento los comandos administrativos de Docker se ejecutan con `sudo`. No
 
 ## Siguiente paso
 
-Preparar la estructura de datos persistentes y desplegar el primer servicio monitorizado.
+## Primer servicio de monitorizacion
+
+Se desplego Uptime Kuma mediante Docker Compose. Su base de datos SQLite se almacena de forma persistente en el HDD y la interfaz escucha exclusivamente en `127.0.0.1`. El acceso administrativo se realiza mediante un tunel SSH, sin publicar el puerto en la red local.
+
+Se crearon dos comprobaciones iniciales para diferenciar la disponibilidad del router local de la salida a Internet. Ambas se validaron correctamente. Las direcciones concretas y las credenciales del panel no se publican.
+
+## Siguiente paso
+
+Ampliar las comprobaciones de servicios y desplegar metricas del sistema para CPU, memoria, almacenamiento y temperaturas.

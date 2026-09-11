@@ -16,7 +16,7 @@
 
 - [x] Instalar Docker y Docker Compose.
 - [ ] Definir copias de seguridad.
-- [ ] Desplegar monitorizacion inicial.
+- [x] Desplegar monitorizacion inicial con Uptime Kuma.
 - [ ] Crear panel de estado.
 
 ## Fase 3 - HomeLab Guardian

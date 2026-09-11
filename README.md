@@ -13,6 +13,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Pruebas SMART extendidas completadas sin errores en el SSD y el HDD.
 - HDD de 1 TB preparado en ext4 y montado automaticamente en `/srv/data`.
 - Docker Engine y Docker Compose instalados desde el repositorio oficial y verificados con un contenedor de prueba.
+- Uptime Kuma desplegado como primer servicio de monitorizacion, accesible mediante tunel SSH.
 
 ## Hardware base
 
@@ -43,6 +44,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Seguridad](security/hardening.md)
 - [Problemas y soluciones](docs/troubleshooting.md)
 - [Diario de progreso](docs/journal/2026-09-10-instalacion-inicial.md)
+- [Despliegue de Uptime Kuma](infrastructure/docker/uptime-kuma/compose.yaml)
 
 ## Seguridad del repositorio
 
