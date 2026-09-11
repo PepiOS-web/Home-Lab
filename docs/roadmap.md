@@ -8,7 +8,8 @@
 - [x] Configurar funcionamiento sin suspension.
 - [x] Configurar conexion Wi-Fi.
 - [x] Completar pruebas SMART extendidas.
-- [ ] Reservar una IP estable en el router.
+- [x] Configurar una direccion IP local estable en Ubuntu.
+- [ ] Reservar o excluir esa direccion en el servidor DHCP del router.
 - [x] Revisar y preparar el HDD de 1 TB.
 
 ## Fase 2 - Plataforma de servicios

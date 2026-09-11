@@ -8,6 +8,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Administracion remota mediante SSH con clave Ed25519.
 - Firewall UFW activo y limitado inicialmente a OpenSSH.
 - Conexion Wi-Fi operativa tras reinicios.
+- Direccion IPv4 local estatica configurada para la administracion del servidor.
 - Suspension, hibernacion y accion de cierre de tapa desactivadas.
 - Pruebas SMART extendidas completadas sin errores en el SSD y el HDD.
 - HDD de 1 TB preparado en ext4 y montado automaticamente en `/srv/data`.

@@ -25,4 +25,4 @@
 
 ## Siguiente paso
 
-Reservar una direccion IP estable y comenzar la plataforma de servicios con Docker.
+Comenzar la plataforma de servicios con Docker.
