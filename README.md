@@ -47,6 +47,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Diario de progreso](docs/journal/2026-09-10-instalacion-inicial.md)
 - [Despliegue de Uptime Kuma](infrastructure/docker/uptime-kuma/compose.yaml)
 - [Monitorizacion de red](docs/network-monitoring.md)
+- [Guia de comandos](docs/command-reference.md)
 - [Despliegue de NetAlertX](infrastructure/docker/netalertx/compose.yaml)
 
 ## Seguridad del repositorio
