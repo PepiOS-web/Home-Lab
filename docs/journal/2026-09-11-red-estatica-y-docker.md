@@ -30,4 +30,12 @@ Se crearon dos comprobaciones iniciales para diferenciar la disponibilidad del r
 
 ## Siguiente paso
 
-Ampliar las comprobaciones de servicios y desplegar metricas del sistema para CPU, memoria, almacenamiento y temperaturas.
+## Inventario de red
+
+Se desplego NetAlertX mediante Docker Compose con almacenamiento persistente local. El contenedor completo correctamente su inicializacion y primera exploracion ARP, descubriendo la infraestructura y varios clientes de la red.
+
+Las direcciones, identificadores y nombres reales detectados no se incluyen en este repositorio. Los dispositivos deben identificarse antes de clasificarlos como conocidos.
+
+## Siguiente paso
+
+Desplegar metricas del sistema para CPU, memoria, almacenamiento y temperaturas, y preparar un acceso local centralizado a los paneles.

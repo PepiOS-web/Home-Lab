@@ -6,6 +6,7 @@
 - UFW activo con politica predeterminada de denegar conexiones entrantes.
 - Solo OpenSSH esta permitido por el momento.
 - Sistema actualizado tras la instalacion.
+- Los paneles de administracion no deben publicarse directamente en Internet.
 
 ## Pendiente
 
@@ -14,6 +15,7 @@
 - Revisar periodicamente usuarios, puertos y registros.
 - Crear una estrategia de copias de seguridad.
 - Usar VPN antes de habilitar cualquier acceso desde Internet.
+- Proteger NetAlertX mediante red de confianza, tunel SSH o proxy autenticado.
 
 ## Informacion que no debe publicarse
 

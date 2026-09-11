@@ -14,6 +14,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - HDD de 1 TB preparado en ext4 y montado automaticamente en `/srv/data`.
 - Docker Engine y Docker Compose instalados desde el repositorio oficial y verificados con un contenedor de prueba.
 - Uptime Kuma desplegado como primer servicio de monitorizacion, accesible mediante tunel SSH.
+- NetAlertX desplegado para descubrimiento local e inventario de dispositivos.
 
 ## Hardware base
 
@@ -45,6 +46,8 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Problemas y soluciones](docs/troubleshooting.md)
 - [Diario de progreso](docs/journal/2026-09-10-instalacion-inicial.md)
 - [Despliegue de Uptime Kuma](infrastructure/docker/uptime-kuma/compose.yaml)
+- [Monitorizacion de red](docs/network-monitoring.md)
+- [Despliegue de NetAlertX](infrastructure/docker/netalertx/compose.yaml)
 
 ## Seguridad del repositorio
 
