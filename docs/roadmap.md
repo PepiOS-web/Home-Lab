@@ -14,7 +14,7 @@
 
 ## Fase 2 - Plataforma de servicios
 
-- [ ] Instalar Docker y Docker Compose.
+- [x] Instalar Docker y Docker Compose.
 - [ ] Definir copias de seguridad.
 - [ ] Desplegar monitorizacion inicial.
 - [ ] Crear panel de estado.

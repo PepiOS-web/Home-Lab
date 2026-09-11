@@ -14,4 +14,12 @@ La direccion concreta, la MAC, el SSID y las credenciales de red no se publican.
 
 ## Siguiente paso
 
-Instalar Docker Engine y el complemento Docker Compose desde el repositorio oficial, verificar su funcionamiento y preparar la estructura de servicios.
+## Docker
+
+Se instalaron Docker Engine, containerd, Buildx y el complemento Docker Compose desde el repositorio oficial de Docker. Se confirmaron el estado activo del servicio, su inicio automatico y la ejecucion correcta del contenedor efimero `hello-world`.
+
+Por el momento los comandos administrativos de Docker se ejecutan con `sudo`. No se ha concedido acceso al socket de Docker al usuario sin privilegios, ya que dicho acceso es practicamente equivalente a disponer de permisos de administrador.
+
+## Siguiente paso
+
+Preparar la estructura de datos persistentes y desplegar el primer servicio monitorizado.
