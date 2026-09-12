@@ -1,0 +1,7 @@
+[Unit]
+Description=Export HomeLab temperature metrics for Node Exporter
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/export-homelab-temperatures
+User=root

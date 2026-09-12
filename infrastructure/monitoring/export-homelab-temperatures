@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+output="/var/lib/node_exporter/textfile_collector/temperatures.prom"
+temporary="${output}.tmp"
+
+{
+    echo '# HELP homelab_temperature_celsius Temperature reported by Linux thermal zones.'
+    echo '# TYPE homelab_temperature_celsius gauge'
+
+    for zone in /sys/class/thermal/thermal_zone*; do
+        [ -r "$zone/type" ] || continue
+        [ -r "$zone/temp" ] || continue
+
+        type=$(cat "$zone/type")
+        temperature=$(cat "$zone/temp")
+        [[ "$temperature" =~ ^[0-9]+$ ]] || continue
+
+        zone_name=$(basename "$zone")
+        type=${type//\\/\\\\}
+        type=${type//\"/\\\"}
+
+        awk -v zone="$zone_name" -v sensor="$type" -v value="$temperature" \
+            'BEGIN {
+                printf "homelab_temperature_celsius{zone=\"%s\",sensor=\"%s\"} %.3f\n",
+                zone, sensor, value / 1000
+            }'
+    done
+} > "$temporary"
+
+chmod 644 "$temporary"
+mv "$temporary" "$output"

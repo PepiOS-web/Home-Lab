@@ -18,11 +18,15 @@
 - [ ] Definir copias de seguridad.
 - [x] Desplegar monitorizacion inicial con Uptime Kuma.
 - [x] Desplegar descubrimiento e inventario local con NetAlertX.
-- [ ] Crear panel de estado.
+- [x] Desplegar Prometheus y Node Exporter para metricas del sistema.
+- [x] Crear panel de Grafana para CPU, memoria, discos y red.
+- [x] Incorporar temperaturas Linux al historial de Prometheus.
+- [ ] Configurar alertas de recursos y temperatura.
+- [ ] Crear portal local centralizado.
 
 ## Fase 3 - HomeLab Guardian
 
-- [ ] Recibir telemetria de sensores.
+- [x] Recibir la primera telemetria local de sensores termicos integrados.
 - [ ] Medir temperatura, humedad y calidad del aire.
 - [ ] Incorporar ruido, vibracion y estado de ventiladores.
 - [ ] Registrar disponibilidad y latencia de equipos.

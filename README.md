@@ -13,8 +13,11 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Pruebas SMART extendidas completadas sin errores en el SSD y el HDD.
 - HDD de 1 TB preparado en ext4 y montado automaticamente en `/srv/data`.
 - Docker Engine y Docker Compose instalados desde el repositorio oficial y verificados con un contenedor de prueba.
-- Uptime Kuma desplegado como primer servicio de monitorizacion, accesible mediante tunel SSH.
+- Uptime Kuma desplegado para supervisar disponibilidad y latencia.
 - NetAlertX desplegado para descubrimiento local e inventario de dispositivos.
+- Prometheus y Node Exporter recopilando metricas del servidor cada 15 segundos.
+- Grafana desplegado con el dashboard Node Exporter Full.
+- Temperaturas Linux exportadas automaticamente cada minuto mediante systemd.
 
 ## Hardware base
 
@@ -49,6 +52,8 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Monitorizacion de red](docs/network-monitoring.md)
 - [Guia de comandos](docs/command-reference.md)
 - [Despliegue de NetAlertX](infrastructure/docker/netalertx/compose.yaml)
+- [Monitorizacion del sistema](docs/system-monitoring.md)
+- [Despliegue de Prometheus, Node Exporter y Grafana](infrastructure/docker/monitoring/compose.yaml)
 
 ## Seguridad del repositorio
 
