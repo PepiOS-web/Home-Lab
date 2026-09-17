@@ -23,4 +23,4 @@ Todo      -> Grafana / HomeLab Guardian
 
 El repositorio no contiene exportaciones ni capturas reales de los paneles. Tampoco almacena direcciones IP, direcciones MAC, nombres de dispositivos, SSID, credenciales ni la direccion publica del domicilio.
 
-NetAlertX utiliza la red del host y las capacidades `NET_RAW`, `NET_ADMIN` y `NET_BIND_SERVICE` para el descubrimiento. Su interfaz debe limitarse a una red de confianza, un tunel SSH o un proxy inverso autenticado. No debe publicarse directamente en Internet.
+NetAlertX utiliza la red del host y las capacidades `NET_RAW`, `NET_ADMIN` y `NET_BIND_SERVICE` para el descubrimiento. `LISTEN_ADDR=127.0.0.1` limita su interfaz web y Caddy la publica como `https://network.home.arpa`. El puerto directo 20211 no se permite en UFW.

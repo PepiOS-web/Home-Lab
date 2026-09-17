@@ -3,17 +3,22 @@
 ## Vision general
 
 ```text
-Ordenador personal
+Equipos de la LAN
       |
-      | SSH / panel web (red local)
+      | HTTPS 443
       v
+Caddy (TLS interno y cabeceras de seguridad)
+      |
+      |-- 127.0.0.1:8080 -> Homepage
+      |-- 127.0.0.1:3000 -> Grafana
+      |-- 127.0.0.1:3001 -> Uptime Kuma
+      `-- 127.0.0.1:20211 -> NetAlertX
+
 Servidor Ubuntu
-  |-- Homepage: portal local de acceso
-  |-- Uptime Kuma: disponibilidad y latencia
-  |-- NetAlertX: inventario y eventos de red
   |-- Node Exporter: metricas del sistema
   |-- Prometheus: almacenamiento de series temporales
-  |-- Grafana: paneles y visualizacion
+  |-- NetAlertX: inventario y eventos de red
+  |-- Uptime Kuma: disponibilidad y latencia
   |-- Almacenamiento en HDD
   `-- Analisis de anomalias
              ^
@@ -44,6 +49,8 @@ Node Exporter -- cada 15 s --> Prometheus -- consultas --> Grafana
                          /srv/data/appdata/prometheus
 ```
 
-Prometheus y Node Exporter solo escuchan en la interfaz de bucle local. Grafana se publica unicamente en la red privada y el firewall limita su acceso a la subred local.
+Prometheus, Node Exporter y las interfaces web escuchan en la interfaz de bucle local. Caddy es el unico punto de entrada web y publica HTTPS 443 solo hacia la subred local.
 
 Homepage proporciona un punto de entrada visual a los paneles. La primera version contiene enlaces y comprobaciones HTTP, pero no monta el socket de Docker ni almacena tokens de las APIs.
+
+Los nombres `*.home.arpa` se resuelven mediante DNS local o entradas locales de prueba. Caddy emite certificados con una autoridad privada cuya clave nunca se publica.

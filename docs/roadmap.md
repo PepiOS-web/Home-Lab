@@ -25,6 +25,8 @@
 - [x] Configurar alertas de recursos, disponibilidad y temperatura.
 - [x] Enviar notificaciones de Grafana a un canal privado de Discord.
 - [x] Crear portal local centralizado.
+- [x] Publicar los paneles mediante Caddy y HTTPS interno.
+- [x] Limitar los puertos web de los servicios a loopback.
 - [ ] Incorporar DNS local y nombres legibles para los servicios.
 
 ## Fase 3 - HomeLab Guardian

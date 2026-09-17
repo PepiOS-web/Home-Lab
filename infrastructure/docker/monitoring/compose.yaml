@@ -38,8 +38,11 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      GF_SERVER_HTTP_ADDR: ${GRAFANA_BIND_ADDRESS:?Define GRAFANA_BIND_ADDRESS in .env}
+      GF_SERVER_HTTP_ADDR: 127.0.0.1
       GF_SERVER_HTTP_PORT: "3000"
+      GF_SERVER_DOMAIN: grafana.home.arpa
+      GF_SERVER_ROOT_URL: https://grafana.home.arpa
+      GF_SERVER_ENFORCE_DOMAIN: "true"
     volumes:
       - /srv/data/appdata/grafana:/var/lib/grafana
     security_opt:

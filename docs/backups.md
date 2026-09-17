@@ -6,13 +6,15 @@ El servidor genera una copia consistente cada madrugada. Antes de archivar los d
 
 ## Contenido
 
-- Datos persistentes de Grafana, Prometheus, Uptime Kuma y NetAlertX.
+- Datos persistentes de Grafana, Prometheus, Uptime Kuma, NetAlertX, Homepage y Caddy.
 - Proyectos Docker Compose.
 - Recolector de temperaturas.
 - Script, servicio y temporizador de backup.
 - Servicio y temporizador de temperaturas.
 
 Los archivos contienen datos privados y nunca deben publicarse ni compartirse sin cifrado.
+
+La copia contiene la autoridad privada y las claves TLS de Caddy. Se crea con `umask 077`, directorio `0700` y archivos `0600`. Perderla impide recuperar la misma cadena de confianza; divulgarla permitiria suplantar servicios internos.
 
 ## Ejecucion
 

@@ -1,0 +1,42 @@
+{
+    auto_https disable_redirects
+    admin 127.0.0.1:2019
+}
+
+(security_headers) {
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "no-referrer"
+        -Server
+    }
+}
+
+portal.home.arpa {
+    bind {$SERVER_BIND_ADDRESS}
+    tls internal
+    import security_headers
+    reverse_proxy 127.0.0.1:8080
+}
+
+grafana.home.arpa {
+    bind {$SERVER_BIND_ADDRESS}
+    tls internal
+    import security_headers
+    reverse_proxy 127.0.0.1:3000
+}
+
+kuma.home.arpa {
+    bind {$SERVER_BIND_ADDRESS}
+    tls internal
+    import security_headers
+    reverse_proxy 127.0.0.1:3001
+}
+
+network.home.arpa {
+    bind {$SERVER_BIND_ADDRESS}
+    tls internal
+    import security_headers
+    reverse_proxy 127.0.0.1:20211
+}

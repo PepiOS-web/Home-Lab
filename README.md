@@ -21,6 +21,8 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Alertas de temperatura, disponibilidad, almacenamiento y memoria enviadas a Discord.
 - Copias consistentes diarias con verificacion SHA-256 y rotacion automatica.
 - Portal local Homepage para centralizar el acceso a los servicios.
+- Proxy inverso Caddy con HTTPS interno para todos los paneles web.
+- Interfaces web enlazadas a loopback; solo HTTPS 443 se publica en la LAN.
 
 ## Hardware base
 
@@ -59,6 +61,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Despliegue de Prometheus, Node Exporter y Grafana](infrastructure/docker/monitoring/compose.yaml)
 - [Copias de seguridad](docs/backups.md)
 - [Portal local](docs/portal.md)
+- [HTTPS local con Caddy](docs/https-local.md)
 
 ## Seguridad del repositorio
 

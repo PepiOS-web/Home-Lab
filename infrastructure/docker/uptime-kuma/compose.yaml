@@ -4,6 +4,13 @@ services:
     container_name: uptime-kuma
     restart: unless-stopped
     ports:
-      - "${KUMA_BIND_ADDRESS:-127.0.0.1}:3001:3001"
+      - "127.0.0.1:3001:3001"
+    environment:
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/homelab-caddy-root.crt
+    extra_hosts:
+      - "portal.home.arpa:${SERVER_PRIVATE_IP:?Define SERVER_PRIVATE_IP in .env}"
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - /srv/data/appdata/uptime-kuma:/app/data
+      - /srv/data/appdata/caddy/data/caddy/pki/authorities/local/root.crt:/etc/ssl/certs/homelab-caddy-root.crt:ro

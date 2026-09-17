@@ -4,10 +4,9 @@ services:
     container_name: homepage
     restart: unless-stopped
     ports:
-      - "${HOMEPAGE_BIND_ADDRESS:?Define HOMEPAGE_BIND_ADDRESS}:8080:3000"
+      - "127.0.0.1:8080:3000"
     environment:
-      HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS:?Define HOMEPAGE_ALLOWED_HOSTS}
-      HOMEPAGE_VAR_SERVER_URL: ${HOMEPAGE_VAR_SERVER_URL:?Define HOMEPAGE_VAR_SERVER_URL}
+      HOMEPAGE_ALLOWED_HOSTS: portal.home.arpa
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
     volumes:

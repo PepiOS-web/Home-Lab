@@ -14,5 +14,6 @@ services:
     tmpfs:
       - /tmp:uid=20211,gid=20211,mode=1700
     environment:
+      LISTEN_ADDR: "127.0.0.1"
       PORT: "20211"
       APP_CONF_OVERRIDE: '{"GRAPHQL_PORT":"20214"}'

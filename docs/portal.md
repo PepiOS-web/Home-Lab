@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX y la documentacion del proyecto. El portal se publica solamente en la direccion privada del servidor y UFW limita el acceso a la red local.
+Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX y la documentacion del proyecto. Homepage escucha en `127.0.0.1:8080` y Caddy lo publica como `https://portal.home.arpa`.
 
 ## Seguridad
 
@@ -10,17 +10,17 @@ Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX y 
 - El contenedor usa un usuario sin privilegios y `no-new-privileges`.
 - No se monta `/var/run/docker.sock`.
 - No se configuran widgets con tokens o credenciales.
-- `HOMEPAGE_ALLOWED_HOSTS` restringe los encabezados Host aceptados.
+- `HOMEPAGE_ALLOWED_HOSTS` restringe los encabezados Host a `portal.home.arpa`.
 - `disableIndexing` solicita a buscadores que no indexen la pagina.
 
 El portal no debe exponerse directamente a Internet. Un despliegue remoto futuro requerira VPN o proxy inverso con autenticacion y TLS.
 
 ## Configuracion
 
-Los archivos persistentes residen en `/srv/data/appdata/homepage` y el proyecto Compose en `/srv/data/compose/homepage`. Las plantillas del repositorio sustituyen la direccion real por variables de entorno.
+Los archivos persistentes residen en `/srv/data/appdata/homepage` y el proyecto Compose en `/srv/data/compose/homepage`.
 
-Antes del primer despliegue se copian los archivos de `config/` al directorio persistente y se crea un `.env` local a partir de `.env.example`. La direccion `192.0.2.10` de la plantilla pertenece a TEST-NET-1 y debe reemplazarse por la direccion privada del servidor. El archivo `.env` real no se versiona.
+Antes del primer despliegue se copian los archivos de `config/` al directorio persistente. Los enlaces utilizan nombres `*.home.arpa`; su resolucion se configura en el DNS local y no se versionan direcciones reales.
 
 ## Monitorizacion
 
-Uptime Kuma comprueba el portal mediante HTTP cada minuto. Una respuesta `200 OK` confirma que el servicio web responde; no garantiza por si sola que todos los servicios enlazados esten disponibles.
+Uptime Kuma comprueba `https://portal.home.arpa` cada minuto y confia explicitamente en la autoridad local de Caddy. Una respuesta `200 OK` confirma que el portal responde; no garantiza por si sola que todos los servicios enlazados esten disponibles.

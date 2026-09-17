@@ -1,21 +1,18 @@
 - Monitorizacion:
     - Grafana:
         icon: grafana.png
-        href: "{{HOMEPAGE_VAR_SERVER_URL}}:3000"
+        href: https://grafana.home.arpa
         description: Metricas, temperaturas y alertas
-        siteMonitor: "{{HOMEPAGE_VAR_SERVER_URL}}:3000"
 
     - Uptime Kuma:
         icon: uptime-kuma.png
-        href: "{{HOMEPAGE_VAR_SERVER_URL}}:3001"
+        href: https://kuma.home.arpa
         description: Disponibilidad y latencia
-        siteMonitor: "{{HOMEPAGE_VAR_SERVER_URL}}:3001"
 
     - NetAlertX:
         icon: netalertx.png
-        href: "{{HOMEPAGE_VAR_SERVER_URL}}:20211"
+        href: https://network.home.arpa
         description: Inventario y eventos de la red
-        siteMonitor: "{{HOMEPAGE_VAR_SERVER_URL}}:20211"
 
 - Proyecto:
     - GitHub:
