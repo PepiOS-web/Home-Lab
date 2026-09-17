@@ -1,0 +1,14 @@
+[Unit]
+Description=Create a consistent HomeLab backup
+Requires=docker.service
+After=docker.service
+RequiresMountsFor=/srv/data
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelab-backup
+User=root
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

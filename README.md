@@ -19,6 +19,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Grafana desplegado con el dashboard Node Exporter Full.
 - Temperaturas Linux exportadas automaticamente cada minuto mediante systemd.
 - Alertas de temperatura, disponibilidad, almacenamiento y memoria enviadas a Discord.
+- Copias consistentes diarias con verificacion SHA-256 y rotacion automatica.
 
 ## Hardware base
 
@@ -55,6 +56,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Despliegue de NetAlertX](infrastructure/docker/netalertx/compose.yaml)
 - [Monitorizacion del sistema](docs/system-monitoring.md)
 - [Despliegue de Prometheus, Node Exporter y Grafana](infrastructure/docker/monitoring/compose.yaml)
+- [Copias de seguridad](docs/backups.md)
 
 ## Seguridad del repositorio
 

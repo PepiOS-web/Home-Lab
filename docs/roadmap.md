@@ -15,7 +15,8 @@
 ## Fase 2 - Plataforma de servicios
 
 - [x] Instalar Docker y Docker Compose.
-- [ ] Definir copias de seguridad.
+- [x] Definir copias locales diarias, verificacion y rotacion.
+- [ ] Replicar copias cifradas fuera del HDD del servidor.
 - [x] Desplegar monitorizacion inicial con Uptime Kuma.
 - [x] Desplegar descubrimiento e inventario local con NetAlertX.
 - [x] Desplegar Prometheus y Node Exporter para metricas del sistema.

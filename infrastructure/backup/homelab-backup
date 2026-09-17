@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+
+backup_dir="/srv/data/backups/daily"
+backup_stamp=$(date -u +%Y%m%d-%H%M%S)
+archive_name="homelab-${backup_stamp}.tar.gz"
+archive="${backup_dir}/${archive_name}"
+temporary="${archive}.part"
+containers_stopped=0
+
+restart_containers() {
+    if [ "$containers_stopped" -eq 1 ]; then
+        echo "Reiniciando contenedores..."
+        /usr/bin/docker start prometheus grafana netalertx uptime-kuma \
+            >/dev/null || true
+    fi
+}
+
+trap restart_containers EXIT
+
+install -d -m 700 "$backup_dir"
+
+echo "Deteniendo servicios con datos persistentes..."
+containers_stopped=1
+/usr/bin/docker stop grafana prometheus uptime-kuma netalertx >/dev/null
+
+echo "Creando ${archive_name}..."
+/usr/bin/tar --acls --xattrs -czf "$temporary" \
+    /srv/data/appdata \
+    /srv/data/compose \
+    /usr/local/sbin/export-homelab-temperatures \
+    /usr/local/sbin/homelab-backup \
+    /etc/systemd/system/homelab-temperatures.service \
+    /etc/systemd/system/homelab-temperatures.timer \
+    /etc/systemd/system/homelab-backup.service \
+    /etc/systemd/system/homelab-backup.timer
+
+/bin/mv "$temporary" "$archive"
+/bin/chmod 600 "$archive"
+
+echo "Iniciando servicios..."
+/usr/bin/docker start prometheus grafana netalertx uptime-kuma >/dev/null
+containers_stopped=0
+
+echo "Generando y verificando SHA-256..."
+(
+    cd "$backup_dir"
+    /usr/bin/sha256sum "$archive_name" > "${archive_name}.sha256"
+    /bin/chmod 600 "${archive_name}.sha256"
+    /usr/bin/sha256sum -c "${archive_name}.sha256"
+)
+
+echo "Eliminando copias diarias con mas de siete dias..."
+/usr/bin/find "$backup_dir" -maxdepth 1 -type f \
+    \( -name 'homelab-*.tar.gz' -o -name 'homelab-*.tar.gz.sha256' \) \
+    -mtime +7 -delete
+
+echo "Backup completado: ${archive}"

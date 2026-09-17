@@ -12,6 +12,12 @@ authorized_keys
 *.bak
 *.log
 *.tmp
+*.tar
+*.tar.gz
+*.sha256
+*.db
+*.sqlite
+*.sqlite3
 
 # Editors and operating systems
 .vscode/
