@@ -1,0 +1,17 @@
+title: HomeLab Guardian
+description: Portal local de administracion y monitorizacion
+language: es
+target: _blank
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+disableIndexing: true
+
+layout:
+  Monitorizacion:
+    style: row
+    columns: 3
+  Proyecto:
+    style: row
+    columns: 1

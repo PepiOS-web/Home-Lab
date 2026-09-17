@@ -24,7 +24,8 @@
 - [x] Incorporar temperaturas Linux al historial de Prometheus.
 - [x] Configurar alertas de recursos, disponibilidad y temperatura.
 - [x] Enviar notificaciones de Grafana a un canal privado de Discord.
-- [ ] Crear portal local centralizado.
+- [x] Crear portal local centralizado.
+- [ ] Incorporar DNS local y nombres legibles para los servicios.
 
 ## Fase 3 - HomeLab Guardian
 

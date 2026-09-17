@@ -8,6 +8,7 @@ Ordenador personal
       | SSH / panel web (red local)
       v
 Servidor Ubuntu
+  |-- Homepage: portal local de acceso
   |-- Uptime Kuma: disponibilidad y latencia
   |-- NetAlertX: inventario y eventos de red
   |-- Node Exporter: metricas del sistema
@@ -44,3 +45,5 @@ Node Exporter -- cada 15 s --> Prometheus -- consultas --> Grafana
 ```
 
 Prometheus y Node Exporter solo escuchan en la interfaz de bucle local. Grafana se publica unicamente en la red privada y el firewall limita su acceso a la subred local.
+
+Homepage proporciona un punto de entrada visual a los paneles. La primera version contiene enlaces y comprobaciones HTTP, pero no monta el socket de Docker ni almacena tokens de las APIs.

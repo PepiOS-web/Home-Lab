@@ -1,0 +1,24 @@
+- Monitorizacion:
+    - Grafana:
+        icon: grafana.png
+        href: "{{HOMEPAGE_VAR_SERVER_URL}}:3000"
+        description: Metricas, temperaturas y alertas
+        siteMonitor: "{{HOMEPAGE_VAR_SERVER_URL}}:3000"
+
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: "{{HOMEPAGE_VAR_SERVER_URL}}:3001"
+        description: Disponibilidad y latencia
+        siteMonitor: "{{HOMEPAGE_VAR_SERVER_URL}}:3001"
+
+    - NetAlertX:
+        icon: netalertx.png
+        href: "{{HOMEPAGE_VAR_SERVER_URL}}:20211"
+        description: Inventario y eventos de la red
+        siteMonitor: "{{HOMEPAGE_VAR_SERVER_URL}}:20211"
+
+- Proyecto:
+    - GitHub:
+        icon: github.png
+        href: https://github.com/PepiOS-web/Home-Lab
+        description: Codigo y documentacion del HomeLab

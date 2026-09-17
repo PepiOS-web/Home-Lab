@@ -20,6 +20,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Temperaturas Linux exportadas automaticamente cada minuto mediante systemd.
 - Alertas de temperatura, disponibilidad, almacenamiento y memoria enviadas a Discord.
 - Copias consistentes diarias con verificacion SHA-256 y rotacion automatica.
+- Portal local Homepage para centralizar el acceso a los servicios.
 
 ## Hardware base
 
@@ -57,6 +58,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Monitorizacion del sistema](docs/system-monitoring.md)
 - [Despliegue de Prometheus, Node Exporter y Grafana](infrastructure/docker/monitoring/compose.yaml)
 - [Copias de seguridad](docs/backups.md)
+- [Portal local](docs/portal.md)
 
 ## Seguridad del repositorio
 

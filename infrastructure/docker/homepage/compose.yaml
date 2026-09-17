@@ -1,0 +1,16 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v2.3.0
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "${HOMEPAGE_BIND_ADDRESS:?Define HOMEPAGE_BIND_ADDRESS}:8080:3000"
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS:?Define HOMEPAGE_ALLOWED_HOSTS}
+      HOMEPAGE_VAR_SERVER_URL: ${HOMEPAGE_VAR_SERVER_URL:?Define HOMEPAGE_VAR_SERVER_URL}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+    volumes:
+      - /srv/data/appdata/homepage:/app/config
+    security_opt:
+      - no-new-privileges:true
