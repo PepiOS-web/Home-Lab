@@ -39,3 +39,51 @@ homelab_temperature_celsius
 ```
 
 La leyenda usa `{{sensor}} - {{zone}}` y la unidad se configura en grados Celsius.
+
+## Alertas
+
+Grafana evalua las reglas en el grupo `homelab-every-minute` una vez por minuto. Se configuraron estas protecciones iniciales:
+
+| Regla | Condicion | Periodo pendiente | Severidad |
+|---|---|---:|---|
+| Temperatura critica de CPU | `x86_pkg_temp` superior a 85 C | 5 min | critical |
+| Node Exporter no disponible | `up{job="homelab"}` inferior a 1 | 2 min | critical |
+| Espacio del sistema elevado | Uso de `/` superior al 80 % | 10 min | warning |
+| Espacio de datos elevado | Uso de `/srv/data` superior al 85 % | 10 min | warning |
+| Memoria disponible baja | Memoria disponible inferior al 10 % | 10 min | warning |
+
+La memoria se calcula con `MemAvailable`, no con `MemFree`, porque Linux utiliza deliberadamente memoria libre como cache recuperable.
+
+### Consultas PromQL
+
+```promql
+homelab_temperature_celsius{sensor="x86_pkg_temp"}
+```
+
+```promql
+up{job="homelab"}
+```
+
+```promql
+100 * (1 - (
+  node_filesystem_avail_bytes{job="homelab",mountpoint="/"}
+  /
+  node_filesystem_size_bytes{job="homelab",mountpoint="/"}
+))
+```
+
+Para el disco de datos se utiliza la misma consulta con `mountpoint="/srv/data"`.
+
+```promql
+100 * (
+  node_memory_MemAvailable_bytes{job="homelab"}
+  /
+  node_memory_MemTotal_bytes{job="homelab"}
+)
+```
+
+## Notificaciones de Discord
+
+Grafana envia las alertas a un canal privado mediante un contact point de tipo Discord. La URL del webhook es un secreto: no debe incluirse en Compose, capturas, registros compartidos ni repositorios. Si se expone, debe eliminarse inmediatamente en Discord y sustituirse por un webhook nuevo.
+
+La prueba del contact point confirma el trayecto Grafana-Discord; las reglas cubren el trayecto completo desde la metrica hasta la notificacion.

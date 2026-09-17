@@ -21,7 +21,8 @@
 - [x] Desplegar Prometheus y Node Exporter para metricas del sistema.
 - [x] Crear panel de Grafana para CPU, memoria, discos y red.
 - [x] Incorporar temperaturas Linux al historial de Prometheus.
-- [ ] Configurar alertas de recursos y temperatura.
+- [x] Configurar alertas de recursos, disponibilidad y temperatura.
+- [x] Enviar notificaciones de Grafana a un canal privado de Discord.
 - [ ] Crear portal local centralizado.
 
 ## Fase 3 - HomeLab Guardian

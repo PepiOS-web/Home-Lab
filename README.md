@@ -18,6 +18,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Prometheus y Node Exporter recopilando metricas del servidor cada 15 segundos.
 - Grafana desplegado con el dashboard Node Exporter Full.
 - Temperaturas Linux exportadas automaticamente cada minuto mediante systemd.
+- Alertas de temperatura, disponibilidad, almacenamiento y memoria enviadas a Discord.
 
 ## Hardware base
 
