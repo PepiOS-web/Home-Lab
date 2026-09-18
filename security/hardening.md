@@ -6,6 +6,7 @@
 - UFW deniega conexiones entrantes por defecto.
 - Caddy es la unica entrada web, limitada a HTTPS 443 desde la LAN.
 - Grafana, Homepage, Uptime Kuma y la interfaz de NetAlertX escuchan en loopback.
+- La administracion de AdGuard Home escucha en loopback; DNS 53 TCP/UDP se limita a la LAN mediante enlace y firewall.
 - Prometheus y Node Exporter no se publican en la LAN.
 - Los contenedores web usan `no-new-privileges` cuando es compatible.
 - La autoridad privada de Caddy y sus claves permanecen fuera del repositorio.

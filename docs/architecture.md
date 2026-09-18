@@ -4,6 +4,8 @@
 
 ```text
 Equipos de la LAN
+      |-- DNS 53 TCP/UDP --> AdGuard Home
+      |                         `-- nombres *.home.arpa
       |
       | HTTPS 443
       v
@@ -12,13 +14,15 @@ Caddy (TLS interno y cabeceras de seguridad)
       |-- 127.0.0.1:8080 -> Homepage
       |-- 127.0.0.1:3000 -> Grafana
       |-- 127.0.0.1:3001 -> Uptime Kuma
-      `-- 127.0.0.1:20211 -> NetAlertX
+      |-- 127.0.0.1:20211 -> NetAlertX
+      `-- 127.0.0.1:3002 -> Administracion de AdGuard Home
 
 Servidor Ubuntu
   |-- Node Exporter: metricas del sistema
   |-- Prometheus: almacenamiento de series temporales
   |-- NetAlertX: inventario y eventos de red
   |-- Uptime Kuma: disponibilidad y latencia
+  |-- AdGuard Home: DNS local y filtrado
   |-- Almacenamiento en HDD
   `-- Analisis de anomalias
              ^
@@ -53,4 +57,4 @@ Prometheus, Node Exporter y las interfaces web escuchan en la interfaz de bucle 
 
 Homepage proporciona un punto de entrada visual a los paneles. La primera version contiene enlaces y comprobaciones HTTP, pero no monta el socket de Docker ni almacena tokens de las APIs.
 
-Los nombres `*.home.arpa` se resuelven mediante DNS local o entradas locales de prueba. Caddy emite certificados con una autoridad privada cuya clave nunca se publica.
+Los nombres `*.home.arpa` se resuelven mediante AdGuard Home. Durante las pruebas se pueden usar entradas locales temporales. Caddy emite certificados con una autoridad privada cuya clave nunca se publica.

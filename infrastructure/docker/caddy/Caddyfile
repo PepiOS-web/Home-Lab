@@ -40,3 +40,10 @@ network.home.arpa {
     import security_headers
     reverse_proxy 127.0.0.1:20211
 }
+
+dns.home.arpa {
+    bind {$SERVER_BIND_ADDRESS}
+    tls internal
+    import security_headers
+    reverse_proxy 127.0.0.1:3002
+}

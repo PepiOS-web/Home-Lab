@@ -1,0 +1,14 @@
+services:
+  adguardhome:
+    image: adguard/adguardhome:v0.107.76
+    container_name: adguardhome
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PRIVATE_IP:?Define SERVER_PRIVATE_IP in .env}:53:53/tcp"
+      - "${SERVER_PRIVATE_IP:?Define SERVER_PRIVATE_IP in .env}:53:53/udp"
+      - "127.0.0.1:3002:3000/tcp"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /srv/data/appdata/adguardhome/work:/opt/adguardhome/work
+      - /srv/data/appdata/adguardhome/conf:/opt/adguardhome/conf

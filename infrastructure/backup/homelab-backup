@@ -14,7 +14,7 @@ containers_stopped=0
 restart_containers() {
     if [ "$containers_stopped" -eq 1 ]; then
         echo "Reiniciando contenedores..."
-        /usr/bin/docker start prometheus grafana netalertx uptime-kuma homepage caddy \
+        /usr/bin/docker start prometheus grafana netalertx uptime-kuma homepage adguardhome caddy \
             >/dev/null || true
     fi
 }
@@ -25,7 +25,7 @@ install -d -m 700 "$backup_dir"
 
 echo "Deteniendo servicios con datos persistentes..."
 containers_stopped=1
-/usr/bin/docker stop caddy homepage grafana prometheus uptime-kuma netalertx >/dev/null
+/usr/bin/docker stop caddy homepage grafana prometheus uptime-kuma netalertx adguardhome >/dev/null
 
 echo "Creando ${archive_name}..."
 /usr/bin/tar --acls --xattrs -czf "$temporary" \
@@ -42,7 +42,7 @@ echo "Creando ${archive_name}..."
 /bin/chmod 600 "$archive"
 
 echo "Iniciando servicios..."
-/usr/bin/docker start prometheus grafana netalertx uptime-kuma homepage caddy >/dev/null
+/usr/bin/docker start prometheus grafana netalertx uptime-kuma homepage adguardhome caddy >/dev/null
 containers_stopped=0
 
 echo "Generando y verificando SHA-256..."

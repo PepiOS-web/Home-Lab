@@ -23,6 +23,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Portal local Homepage para centralizar el acceso a los servicios.
 - Proxy inverso Caddy con HTTPS interno para todos los paneles web.
 - Interfaces web enlazadas a loopback; solo HTTPS 443 se publica en la LAN.
+- AdGuard Home proporciona DNS local, bloqueo de dominios y resolucion de los nombres `*.home.arpa`.
 
 ## Hardware base
 
@@ -62,6 +63,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Copias de seguridad](docs/backups.md)
 - [Portal local](docs/portal.md)
 - [HTTPS local con Caddy](docs/https-local.md)
+- [DNS local con AdGuard Home](docs/dns-local.md)
 
 ## Seguridad del repositorio
 

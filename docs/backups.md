@@ -6,7 +6,7 @@ El servidor genera una copia consistente cada madrugada. Antes de archivar los d
 
 ## Contenido
 
-- Datos persistentes de Grafana, Prometheus, Uptime Kuma, NetAlertX, Homepage y Caddy.
+- Datos persistentes de Grafana, Prometheus, Uptime Kuma, NetAlertX, Homepage, AdGuard Home y Caddy.
 - Proyectos Docker Compose.
 - Recolector de temperaturas.
 - Script, servicio y temporizador de backup.
