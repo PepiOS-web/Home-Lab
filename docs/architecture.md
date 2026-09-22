@@ -17,6 +17,15 @@ Caddy (TLS interno y cabeceras de seguridad)
       |-- 127.0.0.1:20211 -> NetAlertX
       `-- 127.0.0.1:3002 -> Administracion de AdGuard Home
 
+Dispositivos remotos autorizados
+      |
+      | Tailscale cifrado + politica de acceso
+      v
+Ruta /32 exclusiva al servidor
+      |-- HTTPS 443 -> Caddy
+      |-- DNS 53 TCP/UDP -> AdGuard Home
+      `-- SSH 22 -> OpenSSH con clave publica
+
 Servidor Ubuntu
   |-- Node Exporter: metricas del sistema
   |-- Prometheus: almacenamiento de series temporales
@@ -58,3 +67,5 @@ Prometheus, Node Exporter y las interfaces web escuchan en la interfaz de bucle 
 Homepage proporciona un punto de entrada visual a los paneles. La primera version contiene enlaces y comprobaciones HTTP, pero no monta el socket de Docker ni almacena tokens de las APIs.
 
 Los nombres `*.home.arpa` se resuelven mediante AdGuard Home. Durante las pruebas se pueden usar entradas locales temporales. Caddy emite certificados con una autoridad privada cuya clave nunca se publica.
+
+El acceso remoto utiliza una ruta Tailscale limitada exclusivamente a la direccion del servidor. No se anuncia la LAN completa ni una ruta de salida a Internet. El DNS dividido de Tailscale envia solo las consultas de `home.arpa` a AdGuard Home. Las politicas de Tailscale y UFW permiten unicamente HTTPS, DNS y SSH, y los dispositivos nuevos requieren aprobacion.

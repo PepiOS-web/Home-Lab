@@ -11,10 +11,16 @@ El servidor genera una copia consistente cada madrugada. Antes de archivar los d
 - Recolector de temperaturas.
 - Script, servicio y temporizador de backup.
 - Servicio y temporizador de temperaturas.
+- Configuracion de OpenSSH y sus fragmentos de endurecimiento.
+- Reglas persistentes de UFW.
+- Configuracion de reenvio IP necesaria para la ruta restringida de Tailscale.
+- Repositorio firmado y llavero publico usados para instalar Tailscale.
 
 Los archivos contienen datos privados y nunca deben publicarse ni compartirse sin cifrado.
 
 La copia contiene la autoridad privada y las claves TLS de Caddy. Se crea con `umask 077`, directorio `0700` y archivos `0600`. Perderla impide recuperar la misma cadena de confianza; divulgarla permitiria suplantar servicios internos.
+
+El estado `/var/lib/tailscale` se excluye deliberadamente porque contiene la identidad privada del nodo. Despues de una restauracion, Tailscale debe instalarse, autenticarse y aprobarse como un dispositivo nuevo.
 
 ## Ejecucion
 

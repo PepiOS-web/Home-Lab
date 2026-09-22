@@ -41,5 +41,5 @@
 ## Fase 4 - Servicios futuros
 
 - [ ] Nube privada de archivos y fotografias.
-- [ ] Acceso remoto seguro mediante VPN.
+- [x] Acceso remoto seguro mediante Tailscale, ruta `/32` y control de acceso por puertos.
 - [ ] Automatizaciones y servicios adicionales.

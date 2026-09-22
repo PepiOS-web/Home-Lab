@@ -36,7 +36,13 @@ echo "Creando ${archive_name}..."
     /etc/systemd/system/homelab-temperatures.service \
     /etc/systemd/system/homelab-temperatures.timer \
     /etc/systemd/system/homelab-backup.service \
-    /etc/systemd/system/homelab-backup.timer
+    /etc/systemd/system/homelab-backup.timer \
+    /etc/ssh/sshd_config \
+    /etc/ssh/sshd_config.d \
+    /etc/ufw \
+    /etc/sysctl.d/99-tailscale.conf \
+    /etc/apt/sources.list.d/tailscale.list \
+    /usr/share/keyrings/tailscale-archive-keyring.gpg
 
 /bin/mv "$temporary" "$archive"
 /bin/chmod 600 "$archive"

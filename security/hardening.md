@@ -12,15 +12,19 @@
 - La autoridad privada de Caddy y sus claves permanecen fuera del repositorio.
 - Sistema actualizado tras la instalacion.
 - Los paneles de administracion no deben publicarse directamente en Internet.
+- SSH solo admite claves publicas, desactiva contrasenas y deniega el acceso directo de root.
+- SSH se limita en UFW a la LAN y a la interfaz privada de Tailscale.
+- Tailscale anuncia solo una ruta `/32` al servidor; no funciona como Exit Node.
+- Tailscale SSH esta desactivado: se utiliza OpenSSH dentro del tunel cifrado.
+- La politica de Tailscale limita al propietario los puertos 443, 53 TCP/UDP y 22.
+- Los dispositivos nuevos de Tailscale requieren aprobacion.
 
 ## Pendiente
 
-- Confirmar el acceso por clave desde una segunda sesion antes de desactivar contrasenas SSH.
 - Configurar actualizaciones de seguridad automaticas.
 - Revisar periodicamente usuarios, puertos y registros.
 - Replicar las copias de seguridad cifradas fuera del servidor.
-- Usar VPN antes de habilitar cualquier acceso desde Internet.
-- Restringir SSH a la LAN o a una VPN cuando se complete el acceso remoto seguro.
+- Revisar periodicamente los dispositivos, usuarios y politicas de Tailscale.
 
 ## Informacion que no debe publicarse
 
@@ -29,3 +33,12 @@
 - Archivos `.env` reales.
 - IP publica, numeros de serie y direcciones MAC.
 - Certificados privados, claves de Caddy, bases de datos y archivos de backup.
+- Direcciones de Tailscale, identificadores de cuenta, nombres reales de dispositivos y enlaces de autenticacion.
+
+## SSH endurecido
+
+La configuracion de referencia se encuentra en
+[`infrastructure/ssh/00-homelab-hardening.conf`](../infrastructure/ssh/00-homelab-hardening.conf).
+Antes de recargar SSH siempre se valida con `sudo sshd -t` y se conserva abierta una sesion funcional mientras se prueba una segunda conexion.
+
+La frase de paso protege la clave privada del equipo cliente. No se almacena en el servidor ni en este repositorio.

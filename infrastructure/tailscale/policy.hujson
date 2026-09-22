@@ -1,0 +1,14 @@
+{
+  // 192.0.2.0/24 esta reservado para documentacion (RFC 5737).
+  // Sustituir solo en el panel privado de Tailscale; no publicar la IP real.
+  "hosts": {
+    "homelab-server": "192.0.2.10/32"
+  },
+  "grants": [
+    {
+      "src": ["autogroup:owner"],
+      "dst": ["homelab-server"],
+      "ip": ["tcp:443", "tcp:53", "udp:53", "tcp:22"]
+    }
+  ]
+}
