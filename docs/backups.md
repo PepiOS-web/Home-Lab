@@ -49,6 +49,23 @@ sudo ls -lh /srv/data/backups/daily
 
 Un servicio `oneshot` aparece como `inactive (dead)` despues de finalizar correctamente. La propiedad importante es `status=0/SUCCESS`.
 
+## Prueba de restauracion
+
+La integridad criptografica y el listado del archivo no sustituyen una prueba de restauracion. Periodicamente se realiza una extraccion parcial en un directorio temporal dentro del area de backups, sin detener ni sobrescribir el servidor activo.
+
+La prueba comprueba:
+
+- extraccion de proyectos Compose, SSH, UFW, unidades y scripts;
+- sintaxis del script principal de backup;
+- compilacion del colector Python del portal;
+- validacion de las unidades de systemd;
+- validacion de todos los archivos `compose.yaml` mediante `docker compose config --quiet`;
+- presencia de la politica SSH endurecida.
+
+El directorio temporal solo se elimina despues de resolver su ruta absoluta y confirmar que coincide con `/srv/data/backups/restore-test.*`. El archivo original y su suma SHA-256 permanecen intactos.
+
+La primera prueba parcial finalizo correctamente. Esto demuestra que las configuraciones esenciales pueden extraerse y analizarse, aunque no sustituye una restauracion integral en hardware independiente.
+
 ## Limitacion actual
 
 Estas copias protegen frente a borrados accidentales, errores de configuracion y corrupcion logica, pero residen en el mismo HDD que los datos originales. No protegen frente a averia, robo o dano fisico. La siguiente mejora sera replicarlas cifradas en otro dispositivo o ubicacion.
