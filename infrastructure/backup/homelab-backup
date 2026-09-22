@@ -42,6 +42,7 @@ echo "Creando ${archive_name}..."
     /etc/ufw \
     /etc/sysctl.d/99-tailscale.conf \
     /etc/apt/sources.list.d/tailscale.list \
+    /etc/apt/apt.conf.d/52-homelab-unattended-upgrades \
     /usr/share/keyrings/tailscale-archive-keyring.gpg
 
 /bin/mv "$temporary" "$archive"

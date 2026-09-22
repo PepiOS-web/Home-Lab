@@ -18,10 +18,11 @@
 - Tailscale SSH esta desactivado: se utiliza OpenSSH dentro del tunel cifrado.
 - La politica de Tailscale limita al propietario los puertos 443, 53 TCP/UDP y 22.
 - Los dispositivos nuevos de Tailscale requieren aprobacion.
+- `unattended-upgrades` instala actualizaciones de seguridad de Ubuntu sin reiniciar automaticamente.
+- Docker, Containerd y Tailscale quedan fuera de las actualizaciones desatendidas y se revisan manualmente.
 
 ## Pendiente
 
-- Configurar actualizaciones de seguridad automaticas.
 - Revisar periodicamente usuarios, puertos y registros.
 - Replicar las copias de seguridad cifradas fuera del servidor.
 - Revisar periodicamente los dispositivos, usuarios y politicas de Tailscale.

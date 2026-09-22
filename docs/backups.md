@@ -15,6 +15,7 @@ El servidor genera una copia consistente cada madrugada. Antes de archivar los d
 - Reglas persistentes de UFW.
 - Configuracion de reenvio IP necesaria para la ruta restringida de Tailscale.
 - Repositorio firmado y llavero publico usados para instalar Tailscale.
+- Configuracion conservadora de actualizaciones automaticas de seguridad.
 
 Los archivos contienen datos privados y nunca deben publicarse ni compartirse sin cifrado.
 

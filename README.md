@@ -26,6 +26,7 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - AdGuard Home proporciona DNS local, bloqueo de dominios y resolucion de los nombres `*.home.arpa`.
 - Acceso remoto privado mediante Tailscale, sin publicar paneles ni SSH en Internet.
 - SSH acepta exclusivamente claves publicas y bloquea el acceso directo de root.
+- Ubuntu instala automaticamente solo las actualizaciones de seguridad permitidas, sin reinicios automaticos.
 
 ## Hardware base
 
@@ -67,6 +68,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [HTTPS local con Caddy](docs/https-local.md)
 - [DNS local con AdGuard Home](docs/dns-local.md)
 - [Acceso remoto seguro con Tailscale](docs/remote-access.md)
+- [Actualizaciones automaticas de seguridad](docs/automatic-security-updates.md)
 
 ## Seguridad del repositorio
 
