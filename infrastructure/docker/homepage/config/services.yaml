@@ -14,6 +14,17 @@
         href: https://network.home.arpa
         description: Inventario y eventos de la red
 
+- Red y seguridad:
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: https://dns.home.arpa
+        description: DNS local y bloqueo de dominios
+
+    - Tailscale:
+        icon: tailscale.png
+        href: https://console.tailscale.com/admin/machines
+        description: Acceso remoto privado y dispositivos autorizados
+
 - Proyecto:
     - GitHub:
         icon: github.png

@@ -12,6 +12,9 @@ layout:
   Monitorizacion:
     style: row
     columns: 3
+  Red y seguridad:
+    style: row
+    columns: 2
   Proyecto:
     style: row
     columns: 1

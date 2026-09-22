@@ -17,5 +17,7 @@
 - Acceso OpenSSH comprobado mediante una clave Ed25519 protegida por frase de paso.
 - Servicios, contenedores, firewall y ruta privada verificados despues de actualizar el sistema.
 - Exit Node confirmado como desactivado.
+- Se anadio a Homepage un enlace simple a la consola oficial de Tailscale, sin tokens ni integracion API.
+- Se anadio a Homepage un enlace simple al panel interno de AdGuard Home.
 
 No se incluyen direcciones reales, identificadores, capturas, claves ni enlaces de autenticacion.
