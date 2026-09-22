@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+
+import datetime
+import ipaddress
+import json
+import re
+import subprocess
+from pathlib import Path
+
+OUTPUT = Path("/srv/data/appdata/homelab-status/status.json")
+BACKUPS = Path("/srv/data/backups/daily")
+
+
+def command(arguments):
+    return subprocess.run(
+        arguments,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+
+
+successful = 0
+failed = 0
+last_user = "Ninguno"
+last_origin = "Sin accesos"
+last_access = None
+
+journal = command([
+    "journalctl", "-u", "ssh", "--since", "24 hours ago", "--no-pager", "-o", "json"
+])
+
+for line in journal.stdout.splitlines():
+    try:
+        entry = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+
+    message = entry.get("MESSAGE", "")
+    accepted = re.search(r"Accepted publickey for ([^ ]+) from ([^ ]+)", message)
+
+    if accepted:
+        successful += 1
+        last_user = accepted.group(1)
+
+        try:
+            address = ipaddress.ip_address(accepted.group(2))
+            if address in ipaddress.ip_network("100.64.0.0/10"):
+                last_origin = "Tailscale"
+            elif address.is_private:
+                last_origin = "LAN"
+            else:
+                last_origin = "Otro"
+        except ValueError:
+            last_origin = "Desconocido"
+
+        timestamp = entry.get("__REALTIME_TIMESTAMP")
+        if timestamp:
+            last_access = datetime.datetime.fromtimestamp(
+                int(timestamp) / 1_000_000,
+                datetime.timezone.utc,
+            ).isoformat()
+
+    if "Failed publickey" in message or "Invalid user" in message:
+        failed += 1
+
+tailscale_online = 0
+tailscale = command(["tailscale", "status", "--json"])
+
+if tailscale.returncode == 0:
+    try:
+        status = json.loads(tailscale.stdout)
+        for peer in status.get("Peer", {}).values():
+            if peer.get("Online") is True:
+                tailscale_online += 1
+    except json.JSONDecodeError:
+        pass
+
+backup_state = command([
+    "systemctl", "show", "homelab-backup.service", "-p", "Result", "-p", "ExecMainStatus"
+])
+backup_values = {}
+for line in backup_state.stdout.splitlines():
+    if "=" in line:
+        key, value = line.split("=", 1)
+        backup_values[key] = value
+
+backup_ok = (
+    backup_values.get("Result") == "success"
+    and backup_values.get("ExecMainStatus") == "0"
+)
+
+archives = list(BACKUPS.glob("homelab-*.tar.gz"))
+latest_backup = max(archives, key=lambda item: item.stat().st_mtime) if archives else None
+backup_time = None
+
+if latest_backup:
+    backup_time = datetime.datetime.fromtimestamp(
+        latest_backup.stat().st_mtime,
+        datetime.timezone.utc,
+    ).isoformat()
+
+summary = {
+    "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "ssh_success_24h": successful,
+    "ssh_failed_24h": failed,
+    "last_ssh_user": last_user,
+    "last_ssh_origin": last_origin,
+    "last_ssh_at": last_access,
+    "tailscale_clients_online": tailscale_online,
+    "backup_status": "Correcto" if backup_ok else "Revisar",
+    "backup_at": backup_time,
+}
+
+temporary = OUTPUT.with_suffix(".tmp")
+temporary.write_text(
+    json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
+temporary.chmod(0o644)
+temporary.replace(OUTPUT)

@@ -1,20 +1,27 @@
 title: HomeLab Guardian
-description: Portal local de administracion y monitorizacion
+description: Portal privado de administracion y monitorizacion
 language: es
 target: _blank
 theme: dark
-color: slate
-headerStyle: clean
+color: sky
+headerStyle: boxedWidgets
 statusStyle: dot
 disableIndexing: true
+fullWidth: false
+useEqualHeights: true
+cardBlur: sm
 
 layout:
   Monitorizacion:
     style: row
     columns: 3
+    icon: mdi-chart-line
   Red y seguridad:
     style: row
     columns: 2
+    icon: mdi-shield-lock
   Proyecto:
     style: row
     columns: 1
+    icon: mdi-github
+    initiallyCollapsed: true

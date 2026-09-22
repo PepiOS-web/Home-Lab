@@ -25,6 +25,48 @@
         href: https://console.tailscale.com/admin/machines
         description: Acceso remoto privado y dispositivos autorizados
 
+    - Actividad SSH:
+        icon: mdi-shield-account
+        description: Resumen saneado de las ultimas 24 horas
+        widget:
+          type: customapi
+          url: http://127.0.0.1:3000/homelab-status.json
+          refreshInterval: 60000
+          mappings:
+            - field: last_ssh_user
+              label: Ultimo usuario
+              format: text
+            - field: last_ssh_origin
+              label: Origen
+              format: text
+            - field: ssh_success_24h
+              label: Correctas
+              format: number
+            - field: ssh_failed_24h
+              label: Rechazadas
+              format: number
+
+    - Estado del servidor:
+        icon: mdi-server-security
+        description: VPN, backup y actualizacion del resumen
+        widget:
+          type: customapi
+          url: http://127.0.0.1:3000/homelab-status.json
+          refreshInterval: 60000
+          mappings:
+            - field: tailscale_clients_online
+              label: Clientes VPN
+              format: number
+            - field: backup_status
+              label: Backup
+              format: text
+            - field: backup_at
+              label: Ultimo backup
+              format: relativeDate
+            - field: generated_at
+              label: Actualizado
+              format: relativeDate
+
 - Proyecto:
     - GitHub:
         icon: github.png

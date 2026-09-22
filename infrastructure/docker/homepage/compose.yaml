@@ -11,5 +11,6 @@ services:
       PGID: ${PGID:-1000}
     volumes:
       - /srv/data/appdata/homepage:/app/config
+      - /srv/data/appdata/homelab-status/status.json:/app/public/homelab-status.json:ro
     security_opt:
       - no-new-privileges:true

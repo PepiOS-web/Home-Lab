@@ -32,9 +32,12 @@ echo "Creando ${archive_name}..."
     /srv/data/appdata \
     /srv/data/compose \
     /usr/local/sbin/export-homelab-temperatures \
+    /usr/local/sbin/export-homelab-status \
     /usr/local/sbin/homelab-backup \
     /etc/systemd/system/homelab-temperatures.service \
     /etc/systemd/system/homelab-temperatures.timer \
+    /etc/systemd/system/homelab-status.service \
+    /etc/systemd/system/homelab-status.timer \
     /etc/systemd/system/homelab-backup.service \
     /etc/systemd/system/homelab-backup.timer \
     /etc/ssh/sshd_config \
