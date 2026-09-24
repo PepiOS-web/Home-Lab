@@ -33,6 +33,7 @@ echo "Creando ${archive_name}..."
     /srv/data/compose \
     /usr/local/sbin/export-homelab-temperatures \
     /usr/local/sbin/export-homelab-status \
+    /usr/local/sbin/export-homelab-alert-metrics \
     /usr/local/sbin/homelab-backup \
     /etc/systemd/system/homelab-temperatures.service \
     /etc/systemd/system/homelab-temperatures.timer \

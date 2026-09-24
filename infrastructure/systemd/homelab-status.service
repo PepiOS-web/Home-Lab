@@ -5,6 +5,7 @@ After=ssh.service tailscaled.service
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/export-homelab-status
+ExecStart=/usr/local/sbin/export-homelab-alert-metrics
 User=root
 Group=root
 UMask=0022
@@ -12,5 +13,5 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/srv/data/appdata/homelab-status
+ReadWritePaths=/srv/data/appdata/homelab-status /var/lib/node_exporter/textfile_collector
 RestrictAddressFamilies=AF_UNIX

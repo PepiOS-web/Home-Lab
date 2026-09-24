@@ -12,6 +12,7 @@ El servidor genera una copia consistente cada madrugada. Antes de archivar los d
 - Script, servicio y temporizador de backup.
 - Servicio y temporizador de temperaturas.
 - Colector saneado del portal y su servicio y temporizador.
+- Exportador de metricas operativas para Prometheus y Grafana.
 - Configuracion de OpenSSH y sus fragmentos de endurecimiento.
 - Reglas persistentes de UFW.
 - Configuracion de reenvio IP necesaria para la ruta restringida de Tailscale.

@@ -6,6 +6,7 @@
 - **Prometheus** consulta las metricas cada 15 segundos y conserva 30 dias de historial.
 - **Grafana** consulta Prometheus y representa los datos en paneles.
 - **systemd** ejecuta cada minuto un script que publica las zonas termicas de Linux.
+- Un segundo exportador convierte el resumen saneado del portal en metricas numericas para alertas.
 
 ## Persistencia
 
@@ -51,6 +52,11 @@ Grafana evalua las reglas en el grupo `homelab-every-minute` una vez por minuto.
 | Espacio del sistema elevado | Uso de `/` superior al 80 % | 10 min | warning |
 | Espacio de datos elevado | Uso de `/srv/data` superior al 85 % | 10 min | warning |
 | Memoria disponible baja | Memoria disponible inferior al 10 % | 10 min | warning |
+| Backup fallido | `homelab_backup_success` inferior a 1 | 5 min | critical |
+| Backup demasiado antiguo | Edad del backup superior a 26 h | 10 min | critical |
+| Colector de estado detenido | Edad del resumen superior a 5 min | 5 min | critical |
+| Temporizador critico desactivado | Minimo de `homelab_timer_active` inferior a 1 | 5 min | critical |
+| Intentos SSH rechazados | `homelab_ssh_failed_24h` superior a 0 | 1 min | warning |
 
 La memoria se calcula con `MemAvailable`, no con `MemFree`, porque Linux utiliza deliberadamente memoria libre como cache recuperable.
 
@@ -81,6 +87,30 @@ Para el disco de datos se utiliza la misma consulta con `mountpoint="/srv/data"`
   node_memory_MemTotal_bytes{job="homelab"}
 )
 ```
+
+Las alertas operativas adicionales utilizan:
+
+```promql
+homelab_backup_success
+```
+
+```promql
+time() - homelab_backup_timestamp_seconds
+```
+
+```promql
+time() - homelab_status_collector_timestamp_seconds
+```
+
+```promql
+min(homelab_timer_active)
+```
+
+```promql
+homelab_ssh_failed_24h
+```
+
+Las metricas no contienen usuarios, IP, puertos, huellas SSH, cuentas ni nombres de dispositivos. No se genera una alerta por cero clientes Tailscale: puede ser un estado normal cuando los clientes remotos estan desconectados.
 
 ## Notificaciones de Discord
 

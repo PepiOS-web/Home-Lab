@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+
+import datetime
+import json
+import subprocess
+from pathlib import Path
+
+SOURCE = Path("/srv/data/appdata/homelab-status/status.json")
+OUTPUT = Path("/var/lib/node_exporter/textfile_collector/homelab-alerts.prom")
+
+
+def timestamp(value):
+    if not value:
+        return 0
+
+    try:
+        return int(datetime.datetime.fromisoformat(value).timestamp())
+    except (TypeError, ValueError):
+        return 0
+
+
+def timer_active(name):
+    result = subprocess.run(
+        ["systemctl", "is-active", "--quiet", name],
+        check=False,
+    )
+    return 1 if result.returncode == 0 else 0
+
+
+data = json.loads(SOURCE.read_text(encoding="utf-8"))
+
+metrics = [
+    "# HELP homelab_status_collector_timestamp_seconds Last successful status collection.",
+    "# TYPE homelab_status_collector_timestamp_seconds gauge",
+    f"homelab_status_collector_timestamp_seconds {timestamp(data.get('generated_at'))}",
+    "# HELP homelab_ssh_success_24h Successful SSH public-key logins in 24 hours.",
+    "# TYPE homelab_ssh_success_24h gauge",
+    f"homelab_ssh_success_24h {int(data.get('ssh_success_24h', 0))}",
+    "# HELP homelab_ssh_failed_24h Rejected SSH attempts in 24 hours.",
+    "# TYPE homelab_ssh_failed_24h gauge",
+    f"homelab_ssh_failed_24h {int(data.get('ssh_failed_24h', 0))}",
+    "# HELP homelab_tailscale_clients_online Online remote Tailscale peers.",
+    "# TYPE homelab_tailscale_clients_online gauge",
+    f"homelab_tailscale_clients_online {int(data.get('tailscale_clients_online', 0))}",
+    "# HELP homelab_backup_success Whether the latest backup service run succeeded.",
+    "# TYPE homelab_backup_success gauge",
+    f"homelab_backup_success {1 if data.get('backup_status') == 'Correcto' else 0}",
+    "# HELP homelab_backup_timestamp_seconds Modification time of the latest backup.",
+    "# TYPE homelab_backup_timestamp_seconds gauge",
+    f"homelab_backup_timestamp_seconds {timestamp(data.get('backup_at'))}",
+    "# HELP homelab_timer_active Whether a critical systemd timer is active.",
+    "# TYPE homelab_timer_active gauge",
+    f'homelab_timer_active{{timer="backup"}} {timer_active("homelab-backup.timer")}',
+    f'homelab_timer_active{{timer="status"}} {timer_active("homelab-status.timer")}',
+]
+
+temporary = OUTPUT.with_suffix(".tmp")
+temporary.write_text("\n".join(metrics) + "\n", encoding="utf-8")
+temporary.chmod(0o644)
+temporary.replace(OUTPUT)
