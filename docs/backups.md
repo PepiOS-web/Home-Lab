@@ -67,6 +67,18 @@ El directorio temporal solo se elimina despues de resolver su ruta absoluta y co
 
 La primera prueba parcial finalizo correctamente. Esto demuestra que las configuraciones esenciales pueden extraerse y analizarse, aunque no sustituye una restauracion integral en hardware independiente.
 
-## Limitacion actual
+## Copia externa cifrada
 
-Estas copias protegen frente a borrados accidentales, errores de configuracion y corrupcion logica, pero residen en el mismo HDD que los datos originales. No protegen frente a averia, robo o dano fisico. La siguiente mejora sera replicarlas cifradas en otro dispositivo o ubicacion.
+Una segunda copia se almacena en el ordenador personal dentro de una carpeta sincronizada por OneDrive. Antes de entrar en esa carpeta, el archivo se verifica mediante SHA-256 y se incorpora a un repositorio cifrado con `restic`. El archivo temporal sin cifrar se elimina siempre al finalizar.
+
+La transferencia usa una clave SSH cargada en `ssh-agent`. Un helper del servidor expone exclusivamente tres operaciones de solo lectura sobre el backup mas reciente: nombre, archivo y checksum. La regla `sudoers` no permite modificar ni eliminar copias.
+
+El servidor mantiene su ejecucion diaria. El ordenador ejecuta la copia externa semanalmente y conserva siete snapshots semanales. La tarea utiliza `StartWhenAvailable`, por lo que una ejecucion perdida se inicia cuando el usuario vuelve a tener una sesion disponible.
+
+La credencial automatica se protege localmente con DPAPI y no se guarda dentro del repositorio. La contrasena original de `restic` debe conservarse aparte en un gestor de contrasenas para permitir una restauracion desde otro equipo.
+
+La primera restauracion externa recupero el archivo completo, permitio leer el `tar.gz` y confirmo la presencia de Caddy, Compose de monitorizacion, Homepage y OpenSSH.
+
+## Limitaciones restantes
+
+La copia externa protege frente a la averia del HDD del servidor. No protege si se pierde simultaneamente el servidor, el ordenador y la cuenta sincronizada, ni sustituye una restauracion integral periodica en hardware independiente. OneDrive solo debe recibir el repositorio cifrado, nunca los archivos `.tar.gz` originales.

@@ -22,7 +22,42 @@ ssh homelab
 Conectar indicando usuario e IP:
 
 ```powershell
-ssh martin@<SERVER_IP>
+ssh <USUARIO>@<SERVER_IP>
+```
+
+Comprobar acceso no interactivo con clave:
+
+```powershell
+ssh -o BatchMode=yes -o ConnectTimeout=8 homelab "printf 'SSH_OK'"
+```
+
+Activar el agente SSH de Windows desde PowerShell como administrador:
+
+```powershell
+Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+Get-Service ssh-agent
+```
+
+Cargar la clave desde PowerShell normal:
+
+```powershell
+ssh-add "$env:USERPROFILE\.ssh\id_ed25519"
+ssh-add -l
+```
+
+No publicar la clave privada ni su huella. La clave publica se instala en `~/.ssh/authorized_keys` y debe conservar estos permisos:
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Diagnosticar un rechazo de clave sin mostrar su contenido:
+
+```bash
+sudo journalctl -u ssh --since "5 minutes ago" --no-pager | tail -30
+namei -l "$HOME/.ssh/authorized_keys"
 ```
 
 Cerrar la conexion:
@@ -356,6 +391,12 @@ Reiniciar un contenedor:
 sudo docker restart <CONTENEDOR>
 ```
 
+Mostrar nombre y estado de todos los contenedores activos:
+
+```bash
+sudo docker ps --format 'table {{.Names}}\t{{.Status}}'
+```
+
 Uso de recursos:
 
 ```bash
@@ -382,6 +423,151 @@ sudo docker inspect --format '{{.State.Health.Status}}' netalertx
 sudo docker logs --tail 50 netalertx
 sudo docker compose -f /srv/data/compose/netalertx/compose.yaml up -d
 ```
+
+Homepage:
+
+```bash
+sudo docker restart homepage
+sudo docker logs --since 2m homepage
+sudo nano /srv/data/appdata/homepage/settings.yaml
+sudo nano /srv/data/appdata/homepage/services.yaml
+sudo nano /srv/data/appdata/homepage/custom.css
+sudo nano /srv/data/appdata/homepage/custom.js
+```
+
+Grafana y Prometheus:
+
+```bash
+sudo docker compose -f /srv/data/compose/monitoring/compose.yaml config --quiet
+sudo docker compose -f /srv/data/compose/monitoring/compose.yaml up -d --force-recreate grafana
+sudo docker logs --tail 50 grafana
+```
+
+Comprobar la configuracion efectiva de Grafana sin mostrar secretos:
+
+```bash
+sudo docker inspect grafana \
+  --format '{{range .Config.Env}}{{println .}}{{end}}' |
+grep -E '^GF_SERVER_(DOMAIN|ROOT_URL|SERVE_FROM_SUB_PATH|ENFORCE_DOMAIN)='
+```
+
+Grafana se publica bajo `https://portal.home.arpa/grafana/`. Al compartir origen con Homepage, el panel autenticado funciona en navegadores moviles sin habilitar acceso anonimo.
+
+Validar y recargar Caddy:
+
+```bash
+sudo docker exec caddy \
+  caddy validate \
+  --config /etc/caddy/Caddyfile \
+  --adapter caddyfile
+
+sudo docker exec caddy \
+  caddy reload \
+  --config /etc/caddy/Caddyfile \
+  --adapter caddyfile
+```
+
+Probar una ruta HTTPS cuando el DNS local no esta disponible en el propio servidor:
+
+```bash
+curl -ksSI \
+  --resolve portal.home.arpa:443:<SERVER_IP> \
+  https://portal.home.arpa/grafana/login |
+head
+```
+
+Una respuesta `HTTP/2 200` confirma que Caddy alcanza Grafana en la subruta.
+
+## Copias de seguridad del servidor
+
+Consultar el temporizador y ejecutar una copia manual:
+
+```bash
+systemctl status homelab-backup.timer --no-pager
+systemctl list-timers --all | grep homelab-backup
+sudo systemctl start homelab-backup.service
+```
+
+Verificar el resultado:
+
+```bash
+systemctl status homelab-backup.service --no-pager
+sudo journalctl -u homelab-backup.service -n 40 --no-pager
+sudo ls -lh /srv/data/backups/daily
+```
+
+El servicio es `oneshot`: `inactive (dead)` es normal despues de finalizar. El resultado valido es `status=0/SUCCESS` y la suma debe indicar `OK`.
+
+Verificar manualmente la suma del ultimo backup:
+
+```bash
+cd /srv/data/backups/daily
+latest=$(find . -maxdepth 1 -type f -name 'homelab-*.tar.gz' -printf '%T@ %f\n' | sort -nr | awk 'NR == 1 { print $2 }')
+sudo sha256sum -c "${latest}.sha256"
+```
+
+## Copia externa cifrada en Windows
+
+La copia externa usa `restic`. El servidor conserva copias diarias y el ordenador obtiene una copia semanal cifrada. Los archivos sin cifrar se descargan solo a un directorio temporal fuera de OneDrive y se eliminan al finalizar.
+
+Ejecutar manualmente la copia externa:
+
+```powershell
+powershell.exe `
+  -NoProfile `
+  -ExecutionPolicy Bypass `
+  -File "$env:USERPROFILE\OneDrive\Desktop\HomeLab-Backups\Backup-HomeLab.ps1"
+```
+
+Consultar la tarea semanal:
+
+```powershell
+Get-ScheduledTask -TaskName "HomeLab Encrypted Backup"
+Get-ScheduledTaskInfo -TaskName "HomeLab Encrypted Backup"
+```
+
+Ejecutarla inmediatamente y consultar el resultado:
+
+```powershell
+Start-ScheduledTask -TaskName "HomeLab Encrypted Backup"
+Get-ScheduledTaskInfo -TaskName "HomeLab Encrypted Backup"
+```
+
+`LastTaskResult` igual a `0` indica exito. La tarea esta programada semanalmente y usa `StartWhenAvailable` para ejecutarse despues si el ordenador no estaba disponible.
+
+Comprobar que no quedaron archivos temporales sin cifrar:
+
+```powershell
+Get-ChildItem "$env:LOCALAPPDATA\HomeLabBackup\staging" -Force
+```
+
+La contrasena original de `restic` debe guardarse en un gestor de contrasenas. El archivo DPAPI permite automatizar el proceso solo con el mismo usuario de Windows, pero no sustituye la contrasena para una recuperacion en otro equipo.
+
+## Restauracion de prueba
+
+Una copia no se considera verificada hasta demostrar que puede restaurarse. La prueba debe hacerse en una carpeta temporal y nunca sobre el servidor activo.
+
+Despues de restaurar el ultimo snapshot con `restic`, comprobar el archivo:
+
+```powershell
+tar -tzf "<RUTA_TEMPORAL>\homelab-<FECHA>.tar.gz" |
+Select-String "srv/data/compose|srv/data/appdata/homepage|etc/ssh"
+```
+
+Antes de borrar la prueba, resolver y revisar la ruta exacta:
+
+```powershell
+$target = [IO.Path]::GetFullPath("$env:LOCALAPPDATA\HomeLabRestoreTest-current")
+$target
+```
+
+Solo si coincide exactamente con la carpeta temporal esperada:
+
+```powershell
+Remove-Item -LiteralPath "$env:LOCALAPPDATA\HomeLabRestoreTest-current" -Recurse -Force
+```
+
+No borrar ni mover la carpeta `repository` de OneDrive: contiene el repositorio cifrado real.
 
 ## Actualizaciones
 
