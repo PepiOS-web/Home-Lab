@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX, AdGuard Home, la consola oficial de Tailscale y la documentacion del proyecto. Homepage escucha en `127.0.0.1:8080` y Caddy lo publica como `https://portal.home.arpa`.
+Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX, AdGuard Home, la consola oficial de Tailscale y la documentacion del proyecto. Homepage escucha en `127.0.0.1:8080` y Caddy lo publica como `https://portal.home.arpa`. El dashboard operativo de Grafana se integra en el portal bajo `/grafana/`.
 
 ## Seguridad
 
@@ -15,6 +15,9 @@ Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX, A
 - El resumen elimina IP, puertos, huellas de claves y nombres de dispositivos.
 - `HOMEPAGE_ALLOWED_HOSTS` restringe los encabezados Host a `portal.home.arpa`.
 - `disableIndexing` solicita a buscadores que no indexen la pagina.
+- El panel integrado mantiene la autenticacion de Grafana y no habilita acceso anonimo.
+- Grafana comparte el origen de `portal.home.arpa`, evitando depender de cookies de terceros en navegadores moviles.
+- `X-Frame-Options: SAMEORIGIN` continua protegiendo los paneles frente a sitios externos.
 
 El portal no se expone directamente a Internet. El acceso remoto se realiza exclusivamente mediante Tailscale y las reglas descritas en la documentacion de acceso remoto.
 
@@ -24,7 +27,9 @@ Los archivos persistentes residen en `/srv/data/appdata/homepage` y el proyecto 
 
 Antes del primer despliegue se copian los archivos de `config/` al directorio persistente. Los enlaces utilizan nombres `*.home.arpa`; su resolucion se configura en el DNS local y no se versionan direcciones reales.
 
-El diseno usa exclusivamente opciones oficiales y CSS local: cuadriculas responsivas, tarjetas translucidas y animaciones que respetan `prefers-reduced-motion`. No descarga fondos, fuentes ni scripts externos.
+El diseno usa exclusivamente CSS y JavaScript locales: una cabecera editorial monocroma, cuadriculas responsivas y tarjetas compactas. No descarga fondos, fuentes ni scripts externos.
+
+El grupo `Panel operativo` permanece plegado inicialmente. Al abrirlo, carga el dashboard autenticado con un intervalo relativo de seis horas y actualizacion automatica cada minuto.
 
 ## Monitorizacion
 

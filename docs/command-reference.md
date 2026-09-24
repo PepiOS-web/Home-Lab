@@ -6,7 +6,7 @@ Referencia practica para administrar HomeLab Guardian. Los valores entre `< >` s
 
 ```text
 PS C:\Users\usuario>       PowerShell de Windows
-martin@homelab:~$          Terminal del servidor Ubuntu
+usuario@homelab:~$         Terminal del servidor Ubuntu
 ```
 
 Los comandos de PowerShell se ejecutan en el ordenador personal. Los comandos Bash se ejecutan despues de conectarse al servidor.
@@ -65,7 +65,7 @@ cd ~
 Rutas importantes:
 
 ```text
-/home/martin                   Directorio personal
+/home/usuario                  Directorio personal
 /srv/data                      HDD de datos persistentes
 /srv/data/compose              Archivos Docker Compose
 /srv/data/appdata              Datos persistentes de aplicaciones

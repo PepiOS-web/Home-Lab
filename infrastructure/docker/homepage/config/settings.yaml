@@ -3,15 +3,22 @@ description: Portal privado de administracion y monitorizacion
 language: es
 target: _blank
 theme: dark
-color: sky
+color: slate
 headerStyle: boxedWidgets
 statusStyle: dot
 disableIndexing: true
-fullWidth: false
+hideVersion: true
+disableUpdateCheck: true
+fullWidth: true
 useEqualHeights: true
 cardBlur: sm
 
 layout:
+  Panel operativo:
+    style: row
+    columns: 1
+    icon: mdi-view-dashboard
+    initiallyCollapsed: true
   Monitorizacion:
     style: row
     columns: 3

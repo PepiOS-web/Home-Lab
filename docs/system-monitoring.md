@@ -14,7 +14,7 @@ Los datos de Prometheus se almacenan en `/srv/data/appdata/prometheus` y la conf
 
 ## Exposicion de red
 
-Node Exporter, Prometheus y Grafana escuchan solamente en `127.0.0.1`. Caddy publica Grafana mediante `https://grafana.home.arpa`; el puerto 3000 no tiene una regla UFW propia.
+Node Exporter, Prometheus y Grafana escuchan solamente en `127.0.0.1`. Caddy publica Grafana bajo `https://portal.home.arpa/grafana/`; el puerto 3000 no tiene una regla UFW propia.
 
 No se deben publicar direcciones reales, credenciales, bases de datos de Grafana ni datos de Prometheus.
 

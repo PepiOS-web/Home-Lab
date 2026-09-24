@@ -17,7 +17,16 @@ portal.home.arpa {
     bind {$SERVER_BIND_ADDRESS}
     tls internal
     import security_headers
-    reverse_proxy 127.0.0.1:8080
+
+    route {
+        handle /grafana/* {
+            reverse_proxy 127.0.0.1:3000
+        }
+
+        handle {
+            reverse_proxy 127.0.0.1:8080
+        }
+    }
 }
 
 grafana.home.arpa {

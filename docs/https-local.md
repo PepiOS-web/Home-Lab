@@ -6,13 +6,15 @@ Caddy es el unico punto de entrada para los paneles web. Escucha en HTTPS 443 so
 
 | Nombre local | Destino interno |
 |---|---|
-| `portal.home.arpa` | `127.0.0.1:8080` |
-| `grafana.home.arpa` | `127.0.0.1:3000` |
+| `portal.home.arpa` | Homepage en `127.0.0.1:8080` y Grafana en `/grafana/` hacia `127.0.0.1:3000` |
+| `grafana.home.arpa` | Compatibilidad con enlaces anteriores; Grafana usa como URL canonica `portal.home.arpa/grafana/` |
 | `kuma.home.arpa` | `127.0.0.1:3001` |
 | `network.home.arpa` | `127.0.0.1:20211` |
 | `dns.home.arpa` | `127.0.0.1:3002` |
 
 `home.arpa` es el dominio reservado para redes domesticas. Los registros se crean en el DNS local. Como alternativa temporal, pueden declararse en el archivo `hosts` de cada cliente.
+
+Grafana se sirve desde el mismo origen que Homepage. Esta disposicion permite que el dashboard autenticado funcione dentro del portal en navegadores de escritorio y moviles sin habilitar acceso anonimo ni depender de cookies de terceros.
 
 Antes del despliegue se copia `.env.example` como `.env` y se reemplaza la direccion TEST-NET por la direccion privada del servidor. El `.env` real permanece ignorado por Git.
 

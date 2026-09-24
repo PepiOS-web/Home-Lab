@@ -1,7 +1,21 @@
+- Panel operativo:
+    - Estado operativo:
+        icon: grafana.png
+        href: https://portal.home.arpa/grafana/d/ad2kn7c/homelab-estado-operativo
+        description: Salud, rendimiento, backups y alertas del HomeLab
+        widget:
+          type: iframe
+          name: HomeLab - Estado operativo
+          src: "https://portal.home.arpa/grafana/d/ad2kn7c/homelab-estado-operativo?from=now-6h&to=now&timezone=browser&refresh=1m&kiosk"
+          classes: h-screen
+          referrerPolicy: same-origin
+          allowFullscreen: true
+          loadingStrategy: eager
+
 - Monitorizacion:
     - Grafana:
         icon: grafana.png
-        href: https://grafana.home.arpa
+        href: https://portal.home.arpa/grafana/
         description: Metricas, temperaturas y alertas
 
     - Uptime Kuma:
