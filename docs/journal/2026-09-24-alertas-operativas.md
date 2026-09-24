@@ -7,6 +7,9 @@
 - Se crearon alertas para backup fallido, backup antiguo, colector detenido, temporizadores desactivados e intentos SSH rechazados.
 - Las reglas se incorporaron al grupo de evaluacion de un minuto y reutilizan el canal privado de notificaciones existente.
 - El exportador se incorporo al backup consistente.
+- Una regla temporal verifico las notificaciones `Firing` y `Resolved` en Discord y se elimino al terminar.
+- Se creo el dashboard **HomeLab - Estado operativo** con indicadores instantaneos, graficas historicas y la lista de alertas.
+- Se genero una exportacion portable del dashboard para facilitar su restauracion.
 
 ## Seguridad
 

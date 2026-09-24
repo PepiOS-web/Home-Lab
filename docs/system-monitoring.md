@@ -41,6 +41,18 @@ homelab_temperature_celsius
 
 La leyenda usa `{{sensor}} - {{zone}}` y la unidad se configura en grados Celsius.
 
+Tambien se creo el dashboard propio **HomeLab - Estado operativo**, que centraliza:
+
+- estado y antiguedad del ultimo backup;
+- estado de los temporizadores y del colector de metricas;
+- intentos SSH rechazados y clientes Tailscale conectados;
+- uso de disco, tiempo encendido, CPU, memoria y temperaturas;
+- estado actual de todas las reglas de alerta.
+
+La exportacion portable y saneada se conserva en
+`infrastructure/grafana/dashboards/homelab-estado-operativo.json`. No contiene
+credenciales, webhooks, direcciones IP ni dominios internos.
+
 ## Alertas
 
 Grafana evalua las reglas en el grupo `homelab-every-minute` una vez por minuto. Se configuraron estas protecciones iniciales:
@@ -116,4 +128,6 @@ Las metricas no contienen usuarios, IP, puertos, huellas SSH, cuentas ni nombres
 
 Grafana envia las alertas a un canal privado mediante un contact point de tipo Discord. La URL del webhook es un secreto: no debe incluirse en Compose, capturas, registros compartidos ni repositorios. Si se expone, debe eliminarse inmediatamente en Discord y sustituirse por un webhook nuevo.
 
-La prueba del contact point confirma el trayecto Grafana-Discord; las reglas cubren el trayecto completo desde la metrica hasta la notificacion.
+Se probo una regla temporal que paso de `Firing` a `Resolved`. Ambas
+notificaciones llegaron al canal privado, confirmando el trayecto completo
+Prometheus-Grafana-Discord. La regla temporal se elimino despues de la prueba.
