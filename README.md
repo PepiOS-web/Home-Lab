@@ -54,6 +54,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 
 ## Documentacion
 
+- [English project summary](docs/summary-en.md)
 - [Arquitectura](docs/architecture.md)
 - [Hoja de ruta](docs/roadmap.md)
 - [Seguridad](security/hardening.md)
