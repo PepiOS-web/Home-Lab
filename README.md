@@ -59,7 +59,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Hoja de ruta](docs/roadmap.md)
 - [Seguridad](security/hardening.md)
 - [Problemas y soluciones](docs/troubleshooting.md)
-- [Diario de progreso](docs/journal/2026-09-10-instalacion-inicial.md)
+- [Diario de progreso](docs/journal/README.md)
 - [Despliegue de Uptime Kuma](infrastructure/docker/uptime-kuma/compose.yaml)
 - [Monitorizacion de red](docs/network-monitoring.md)
 - [Guia de comandos](docs/command-reference.md)

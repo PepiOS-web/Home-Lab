@@ -16,7 +16,7 @@
 
 - [x] Instalar Docker y Docker Compose.
 - [x] Definir copias locales diarias, verificacion y rotacion.
-- [ ] Replicar copias cifradas fuera del HDD del servidor.
+- [x] Replicar semanalmente copias cifradas fuera del HDD del servidor.
 - [x] Desplegar monitorizacion inicial con Uptime Kuma.
 - [x] Desplegar descubrimiento e inventario local con NetAlertX.
 - [x] Desplegar Prometheus y Node Exporter para metricas del sistema.
@@ -33,7 +33,10 @@
 ## Fase 3 - HomeLab Guardian
 
 - [x] Recibir la primera telemetria local de sensores termicos integrados.
-- [ ] Medir temperatura, humedad y calidad del aire.
+- [x] Construir un nodo ambiental para medir temperatura y humedad.
+- [x] Integrar el nodo ambiental con Prometheus, Grafana y Homepage.
+- [x] Habilitar actualizaciones OTA protegidas para el nodo ambiental.
+- [ ] Incorporar medicion de calidad del aire.
 - [ ] Incorporar ruido, vibracion y estado de ventiladores.
 - [ ] Registrar disponibilidad y latencia de equipos.
 - [ ] Crear alertas y deteccion de anomalias.
