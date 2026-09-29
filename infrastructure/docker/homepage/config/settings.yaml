@@ -27,6 +27,10 @@ layout:
     style: row
     columns: 2
     icon: mdi-shield-lock
+  Sensores ambientales:
+    style: row
+    columns: 1
+    icon: mdi-home-thermometer
   Proyecto:
     style: row
     columns: 1

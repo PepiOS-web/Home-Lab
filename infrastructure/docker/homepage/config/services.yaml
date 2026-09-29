@@ -81,6 +81,25 @@
               label: Actualizado
               format: relativeDate
 
+- Sensores ambientales:
+    - Sensor prototipo:
+        icon: mdi-home-thermometer
+        href: http://<SENSOR_IP>/
+        description: Temperatura y humedad en tiempo real
+        widget:
+          type: customapi
+          url: http://127.0.0.1:3000/homelab-status.json
+          refreshInterval: 5000
+          mappings:
+            - field: sensor_temperature_c
+              label: Temperatura
+              format: float
+              suffix: " °C"
+            - field: sensor_humidity_percent
+              label: Humedad
+              format: float
+              suffix: " %"
+
 - Proyecto:
     - GitHub:
         icon: github.png

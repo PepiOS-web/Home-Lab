@@ -33,10 +33,8 @@ Servidor Ubuntu
   |-- Uptime Kuma: disponibilidad y latencia
   |-- AdGuard Home: DNS local y filtrado
   |-- Almacenamiento en HDD
+  |-- Sensor ambiental: temperatura y humedad
   `-- Analisis de anomalias
-             ^
-             |
-      Sensores futuros
 ```
 
 ## Almacenamiento
@@ -60,6 +58,16 @@ Node Exporter -- cada 15 s --> Prometheus -- consultas --> Grafana
                                       |
                                       v
                          /srv/data/appdata/prometheus
+```
+
+El primer nodo ambiental utiliza un ESP8266 con un DHT11. ESPHome publica
+las lecturas en formato Prometheus por HTTP. Prometheus consulta el nodo,
+Grafana conserva y representa el historial, y Homepage recibe un resumen
+saneado con los valores actuales.
+
+```text
+DHT11 -> ESP8266/ESPHome -> Prometheus -> Grafana
+                                  `----> resumen JSON -> Homepage
 ```
 
 Prometheus, Node Exporter y las interfaces web escuchan en la interfaz de bucle local. Caddy es el unico punto de entrada web y publica HTTPS 443 solo hacia la subred local.

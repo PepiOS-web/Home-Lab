@@ -21,6 +21,31 @@ def command(arguments):
     )
 
 
+def prometheus_sensor_value(sensor_id):
+    query = (
+        'esphome_sensor_value{job="sensor-prototipo",'
+        f'id="{sensor_id}"}}'
+    )
+    response = command([
+        "curl",
+        "-fsSG",
+        "--max-time",
+        "3",
+        "--data-urlencode",
+        f"query={query}",
+        "http://127.0.0.1:9090/api/v1/query",
+    ])
+
+    if response.returncode != 0:
+        return None
+
+    try:
+        results = json.loads(response.stdout)["data"]["result"]
+        return float(results[0]["value"][1]) if results else None
+    except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError):
+        return None
+
+
 successful = 0
 failed = 0
 last_user = "Ninguno"
@@ -101,6 +126,9 @@ if latest_backup:
         datetime.timezone.utc,
     ).isoformat()
 
+sensor_temperature = prometheus_sensor_value("temperatura_prototipo")
+sensor_humidity = prometheus_sensor_value("humedad_prototipo")
+
 summary = {
     "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     "ssh_success_24h": successful,
@@ -111,6 +139,8 @@ summary = {
     "tailscale_clients_online": tailscale_online,
     "backup_status": "Correcto" if backup_ok else "Revisar",
     "backup_at": backup_time,
+    "sensor_temperature_c": sensor_temperature,
+    "sensor_humidity_percent": sensor_humidity,
 }
 
 temporary = OUTPUT.with_suffix(".tmp")

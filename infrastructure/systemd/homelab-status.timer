@@ -1,10 +1,10 @@
 [Unit]
-Description=Refresh sanitized HomeLab status every minute
+Description=Refresh sanitized HomeLab status every five seconds
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=1min
-RandomizedDelaySec=5s
+OnUnitActiveSec=5s
+RandomizedDelaySec=1s
 Persistent=true
 Unit=homelab-status.service
 

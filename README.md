@@ -27,6 +27,8 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Acceso remoto privado mediante Tailscale, sin publicar paneles ni SSH en Internet.
 - SSH acepta exclusivamente claves publicas y bloquea el acceso directo de root.
 - Ubuntu instala automaticamente solo las actualizaciones de seguridad permitidas, sin reinicios automaticos.
+- Prototipo ambiental ESP8266 con DHT11 integrado en Prometheus, Grafana y Homepage.
+- Firmware ESPHome actualizable mediante OTA y secretos excluidos del repositorio.
 
 ## Hardware base
 
@@ -69,6 +71,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [DNS local con AdGuard Home](docs/dns-local.md)
 - [Acceso remoto seguro con Tailscale](docs/remote-access.md)
 - [Actualizaciones automaticas de seguridad](docs/automatic-security-updates.md)
+- [Sensor ambiental ESP8266](docs/environmental-sensor.md)
 
 ## Seguridad del repositorio
 
