@@ -35,4 +35,4 @@ El grupo `Panel operativo` permanece plegado inicialmente. Al abrirlo, carga el 
 
 Uptime Kuma comprueba `https://portal.home.arpa` cada minuto y confia explicitamente en la autoridad local de Caddy. Una respuesta `200 OK` confirma que el portal responde; no garantiza por si sola que todos los servicios enlazados esten disponibles.
 
-El temporizador `homelab-status.timer` genera cada minuto un resumen con actividad SSH de las ultimas 24 horas, numero de clientes VPN activos y estado del ultimo backup. El archivo se monta en Homepage como solo lectura y el widget `customapi` lo consulta dentro del propio contenedor.
+El temporizador `homelab-status.timer` genera un resumen con actividad SSH de las ultimas 24 horas, numero de clientes VPN activos, estado del ultimo backup y lecturas ambientales saneadas. El directorio del resumen se monta en Homepage como solo lectura y el widget `customapi` consulta `homelab-status/status.json` dentro del propio contenedor. Se monta el directorio, no el archivo individual, porque el exportador sustituye el JSON de forma atomica en cada actualizacion.

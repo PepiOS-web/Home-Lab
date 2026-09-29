@@ -44,7 +44,7 @@
         description: Resumen saneado de las ultimas 24 horas
         widget:
           type: customapi
-          url: http://127.0.0.1:3000/homelab-status.json
+          url: http://127.0.0.1:3000/homelab-status/status.json
           refreshInterval: 60000
           mappings:
             - field: last_ssh_user
@@ -65,7 +65,7 @@
         description: VPN, backup y actualizacion del resumen
         widget:
           type: customapi
-          url: http://127.0.0.1:3000/homelab-status.json
+          url: http://127.0.0.1:3000/homelab-status/status.json
           refreshInterval: 60000
           mappings:
             - field: tailscale_clients_online
@@ -88,7 +88,7 @@
         description: Temperatura y humedad en tiempo real
         widget:
           type: customapi
-          url: http://127.0.0.1:3000/homelab-status.json
+          url: http://127.0.0.1:3000/homelab-status/status.json
           refreshInterval: 5000
           mappings:
             - field: sensor_temperature_c
