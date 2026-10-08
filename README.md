@@ -58,6 +58,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Arquitectura](docs/architecture.md)
 - [Hoja de ruta](docs/roadmap.md)
 - [Seguridad](security/hardening.md)
+- [Auditoria y adaptador endurecido A9/V720](security/a9-v720-security-review.md)
 - [Problemas y soluciones](docs/troubleshooting.md)
 - [Diario de progreso](docs/journal/README.md)
 - [Despliegue de Uptime Kuma](infrastructure/docker/uptime-kuma/compose.yaml)
@@ -73,6 +74,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [Acceso remoto seguro con Tailscale](docs/remote-access.md)
 - [Actualizaciones automaticas de seguridad](docs/automatic-security-updates.md)
 - [Sensor ambiental ESP8266](docs/environmental-sensor.md)
+- [Adaptador local endurecido A9/V720](infrastructure/docker/a9-v720-hardened/README.md)
 
 ## Seguridad del repositorio
 

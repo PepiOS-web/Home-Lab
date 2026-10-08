@@ -1,0 +1,232 @@
+diff --git a/src/v720_http.py b/src/v720_http.py
+index 82e037d..521e8ae 100644
+--- a/src/v720_http.py
++++ b/src/v720_http.py
+@@ -2,8 +2,11 @@
+ from __future__ import annotations
+ from datetime import datetime
+ import email.utils
++import base64
++import hmac
+ import random
+ import json
++import os
+ 
+ from queue import Queue, Empty
+ import socket
+@@ -13,10 +16,9 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+ 
+ import netifaces
+ from netcl_udp import netcl_udp
+-from a9_live import PORT, WAV_HDR
+-
+-TCP_PORT = PORT
++TCP_PORT = 6123
+ HTTP_PORT = 80
++WAV_HDR = b'RIFF\x8a\xdc\x01\x00WAVEfmt \x12\x00\x00\x00\x06\x00\x01\x00@\x1f\x00\x00@\x1f\x00\x00\x01\x00\x08\x00\x00\x00fact\x04\x00\x00\x006\xdc\x01\x00LIST\x1a\x00\x00\x00INFOISFT\x0e\x00\x00\x00Lavf58.45.100\x00data\xff\xff\xff\xff'
+ 
+ 
+ class v720_http(log, SimpleHTTPRequestHandler):
+@@ -37,8 +39,11 @@ class v720_http(log, SimpleHTTPRequestHandler):
+ 
+     @staticmethod
+     def serve_forever(_http_port=HTTP_PORT):
++        bind_host = os.environ.get('A9_HTTP_BIND_HOST', '127.0.0.1')
++        if not os.environ.get('A9_HTTP_USER') or not os.environ.get('A9_HTTP_PASSWORD'):
++            raise RuntimeError('A9_HTTP_USER and A9_HTTP_PASSWORD are required')
+         try:
+-            with ThreadingHTTPServer(("", _http_port), v720_http) as httpd:
++            with ThreadingHTTPServer((bind_host, _http_port), v720_http) as httpd:
+                 httpd.socket.setsockopt(
+                     socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                 try:
+@@ -69,6 +74,36 @@ class v720_http(log, SimpleHTTPRequestHandler):
+     def log_message(self, format: str, *args) -> None:
+         self.info(format % args)
+ 
++    def __authorized(self):
++        expected_user = os.environ['A9_HTTP_USER']
++        expected_password = os.environ['A9_HTTP_PASSWORD']
++        header = self.headers.get('Authorization', '')
++        if not header.startswith('Basic '):
++            return False
++        try:
++            supplied = base64.b64decode(header[6:], validate=True).decode('utf-8')
++            user, password = supplied.split(':', 1)
++        except (ValueError, UnicodeDecodeError):
++            return False
++        return hmac.compare_digest(user, expected_user) and \
++            hmac.compare_digest(password, expected_password)
++
++    def __require_authorization(self):
++        if self.__authorized():
++            return True
++        self.send_response(401)
++        self.send_header('WWW-Authenticate', 'Basic realm="A9 camera"')
++        self.send_header('Cache-Control', 'no-store')
++        self.send_header('Content-Length', '0')
++        self.send_header('Connection', 'close')
++        self.end_headers()
++        return False
++
++    def __camera_allowed(self):
++        expected_ip = os.environ.get('A9_CAMERA_IP')
++        return expected_ip is not None and hmac.compare_digest(
++            self.client_address[0], expected_ip)
++
+     def __dev_list(self):
+         self.info(f'GET device list: {self.path}')
+         self.send_response(200)
+@@ -87,7 +122,7 @@ class v720_http(log, SimpleHTTPRequestHandler):
+ 
+     def __video_hnd(self, dev):
+ 
+-        q = Queue(16384) # 15kb * 1024 ~ 15mb per camera
++        q = Queue(8)
+         def _on_video_frame(dev, frame):
+             if q.full():
+                 q.get()
+@@ -129,7 +164,7 @@ class v720_http(log, SimpleHTTPRequestHandler):
+             self.err(f'Connection closed by peer @ {dev.id} ({self.client_address[0]})')
+ 
+     def __audio_hnd(self, dev):
+-        q = Queue(16384)  # 15kb * 1024 ~ 15mb per camera
++        q = Queue(32)
+ 
+         def _on_audio_frame(dev, frame):
+             if q.full():
+@@ -201,6 +236,8 @@ class v720_http(log, SimpleHTTPRequestHandler):
+             dev.cap_stop()
+ 
+     def do_GET(self):
++        if self.path.startswith('/dev') and not self.__require_authorization():
++            return
+         if self.path.startswith('/dev/list'):
+             self.__dev_list()
+         elif not self.path.startswith('/dev') or self.path.startswith('/app'):
+@@ -220,6 +257,9 @@ class v720_http(log, SimpleHTTPRequestHandler):
+                 self.send_error(404, 'Not found')
+ 
+     def do_POST(self):
++        if not self.__camera_allowed():
++            self.send_error(403, 'Camera source address is not allowed')
++            return
+         ret = None
+         hdr = [
+             'HTTP/1.1 200',
+@@ -280,16 +320,4 @@ class v720_http(log, SimpleHTTPRequestHandler):
+ 
+ 
+ if __name__ == '__main__':
+-    try:
+-        with ThreadingHTTPServer(("", HTTP_PORT), v720_http) as httpd:
+-            httpd.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+-            try:
+-                httpd.serve_forever()
+-            except KeyboardInterrupt:
+-                print('exiting..')
+-                exit(0)
+-    except PermissionError:
+-        print(
+-            f'--- Can\'t open {HTTP_PORT} port due to system root permissions or maybe you have already running HTTP server?')
+-        print(
+-            f'--- if not try to use "sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80"')
++    v720_http.serve_forever(HTTP_PORT)
+@@ -260,7 +298,7 @@ class v720_http(log, SimpleHTTPRequestHandler):
+                     "domain": "v720.naxclow.com",
+                     "updateUrl": None,
+-                    "host": netcl_udp.get_ip(list(gws['default'].values())[0][0] if len(gws['default']) > 0 else '10.42.0.1', 80),
++                    "host": os.environ["A9_PROTOCOL_BIND_HOST"],
+                     "currTime": f'{int(datetime.timestamp(datetime.now()))}',
+                     "pwd": "deadbeef",
+                     "version": None
+diff --git a/src/v720_sta.py b/src/v720_sta.py
+index 2eb5b39..448e524 100644
+--- a/src/v720_sta.py
++++ b/src/v720_sta.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ import random
++import hmac
++import os
+ import threading
+ from datetime import datetime
+ from queue import Queue
+@@ -23,6 +25,18 @@ class v720_sta(log):
+     
+     _is_running = True
+ 
++    @staticmethod
++    def bind_host() -> str:
++        host = os.environ.get('A9_PROTOCOL_BIND_HOST')
++        if not host:
++            raise RuntimeError('A9_PROTOCOL_BIND_HOST is required')
++        return host
++
++    @staticmethod
++    def camera_allowed(host: str) -> bool:
++        expected = os.environ.get('A9_CAMERA_IP')
++        return expected is not None and hmac.compare_digest(host, expected)
++
+     @staticmethod
+     def kill():
+         v720_sta._is_running = False
+@@ -48,22 +62,30 @@ class v720_sta(log):
+             if on_disconnect is not None and callable(on_disconnect):
+                 on_disconnect(dev)
+ 
+-        with netsrv_tcp('', v720_sta.TCP_PORT) as _tcp:
++        with netsrv_tcp(v720_sta.bind_host(), v720_sta.TCP_PORT) as _tcp:
+             while v720_sta._is_running:
+                 _tcp.open()
+                 fork = _tcp.fork()
+                 if fork is not None:
+-                    v720_sta(fork, init_done_cb = _on_init_done, disconnect_cb=_on_disconnect)
++                    if v720_sta.camera_allowed(fork._host):
++                        v720_sta(fork, init_done_cb = _on_init_done, disconnect_cb=_on_disconnect)
++                    else:
++                        fork.warn('Rejected TCP connection from a non-camera address')
++                        fork.close()
+ 
+         udp_th.join()
+ 
+     @staticmethod
+     def udp_thread() -> None:
+-        with netsrv_udp('', v720_sta.UDP_PORT) as _udp:
++        with netsrv_udp(v720_sta.bind_host(), v720_sta.UDP_PORT) as _udp:
+             while v720_sta._is_running:
+                 _udp.open()
+                 conn = _udp.fork()
+                 if conn:
++                    if not v720_sta.camera_allowed(conn._host):
++                        conn.warn('Rejected UDP datagram from a non-camera address')
++                        conn.close()
++                        continue
+                     ret = conn.recv()
+                     if ret:
+                         pkg = prot_udp.resp(ret)
+diff --git a/requirements-hardened.txt b/requirements-hardened.txt
+new file mode 100644
+index 0000000..b00a84e
+--- /dev/null
++++ b/requirements-hardened.txt
+@@ -0,0 +1 @@
++netifaces==0.11.0
+diff --git a/src/hardened_server.py b/src/hardened_server.py
+new file mode 100644
+index 0000000..b4465dc
+--- /dev/null
++++ b/src/hardened_server.py
+@@ -0,0 +1,12 @@
++#!/usr/bin/env python3
++
++import argparse
++
++from v720_sta import start_srv
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description='Hardened local A9/V720 server')
++    parser.add_argument('--http-port', type=int, default=18080)
++    args = parser.parse_args()
++    start_srv(args.http_port)

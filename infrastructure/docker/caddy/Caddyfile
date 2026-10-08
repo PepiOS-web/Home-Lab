@@ -19,6 +19,10 @@ portal.home.arpa {
     import security_headers
 
     route {
+        handle_path /iss-live/control/* {
+            reverse_proxy 127.0.0.1:8092
+        }
+
         handle /grafana/* {
             reverse_proxy 127.0.0.1:3000
         }

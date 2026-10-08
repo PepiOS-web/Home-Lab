@@ -1,0 +1,24 @@
+services:
+  a9-v720:
+    build:
+      context: .
+    container_name: a9-v720
+    network_mode: host
+    env_file:
+      - .env
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.50
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "2"

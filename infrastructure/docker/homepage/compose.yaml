@@ -12,5 +12,6 @@ services:
     volumes:
       - /srv/data/appdata/homepage:/app/config
       - /srv/data/appdata/homelab-status:/app/public/homelab-status:ro
+      - /srv/data/appdata/astrolearner-iss-live/status:/app/public/iss-live:ro
     security_opt:
       - no-new-privileges:true

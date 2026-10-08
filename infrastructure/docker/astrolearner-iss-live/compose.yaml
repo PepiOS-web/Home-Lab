@@ -1,0 +1,86 @@
+services:
+  iss-live:
+    build:
+      context: .
+      args:
+        APP_UID: ${PUID:-1000}
+        APP_GID: ${PGID:-1000}
+    image: astrolearner-iss-live:local
+    container_name: astrolearner-iss-live
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8092:8092"
+    environment:
+      ISS_LIVE_DRY_RUN: ${ISS_LIVE_DRY_RUN:-true}
+      ISS_LIVE_AUTO_START: ${ISS_LIVE_AUTO_START:-false}
+      ISS_LIVE_USE_NASA_PLAYLIST: ${ISS_LIVE_USE_NASA_PLAYLIST:-true}
+      ISS_LIVE_PRIVACY: ${ISS_LIVE_PRIVACY:-unlisted}
+      ISS_LIVE_CONTROL_TOKEN: ${ISS_LIVE_CONTROL_TOKEN:-}
+      ISS_LIVE_BLOCK_SECONDS: ${ISS_LIVE_BLOCK_SECONDS:-39000}
+      ISS_LIVE_GAP_SECONDS: ${ISS_LIVE_GAP_SECONDS:-90}
+      ISS_LIVE_MAX_BLOCKS: ${ISS_LIVE_MAX_BLOCKS:-0}
+      ISS_LIVE_MAP_SECONDS: ${ISS_LIVE_MAP_SECONDS:-120}
+      ISS_LIVE_MAP_INTERVAL_SECONDS: ${ISS_LIVE_MAP_INTERVAL_SECONDS:-600}
+      ISS_LIVE_SOURCE_URL: ${ISS_LIVE_SOURCE_URL:-}
+      ISS_LIVE_SOURCE_LABEL: ${ISS_LIVE_SOURCE_LABEL:-NASA Space Station Views}
+      ISS_LIVE_POSITION_URL: ${ISS_LIVE_POSITION_URL:-https://api.wheretheiss.at/v1/satellites/25544}
+      ISS_LIVE_WIDTH: ${ISS_LIVE_WIDTH:-1280}
+      ISS_LIVE_HEIGHT: ${ISS_LIVE_HEIGHT:-720}
+      ISS_LIVE_FPS: ${ISS_LIVE_FPS:-12}
+      ISS_LIVE_ENCODER: ${ISS_LIVE_ENCODER:-libx264}
+      LIBVA_DRIVER_NAME: iHD
+      ISS_LIVE_VIDEO_BITRATE: ${ISS_LIVE_VIDEO_BITRATE:-4500k}
+      ISS_LIVE_VIDEO_BUFSIZE: ${ISS_LIVE_VIDEO_BUFSIZE:-9000k}
+      ISS_LIVE_AUDIO_BITRATE: ${ISS_LIVE_AUDIO_BITRATE:-128k}
+      ISS_LIVE_MUSIC_VOLUME: ${ISS_LIVE_MUSIC_VOLUME:-4}
+      ISS_LIVE_YOUTUBE_CLIENT_SECRET: ${ISS_LIVE_YOUTUBE_CLIENT_SECRET:-/run/secrets/youtube-client-secret.json}
+      ISS_LIVE_YOUTUBE_TOKEN: ${ISS_LIVE_YOUTUBE_TOKEN:-/data/secrets/youtube-token.json}
+      ISS_LIVE_DATA_DIR: /data
+      ISS_LIVE_STATUS_DIR: /status
+      ISS_LIVE_NASA_PLAYLIST: ${ISS_LIVE_NASA_PLAYLIST:-/data/nasa/videos/playlist.ffconcat}
+      ISS_LIVE_NASA_LOOP_VIDEO: ${ISS_LIVE_NASA_LOOP_VIDEO:-/data/nasa/videos/astrolearner-nasa-loop.mp4}
+    volumes:
+      - /srv/data/appdata/astrolearner-iss-live/music:/data/music
+      - /srv/data/appdata/astrolearner-iss-live/nasa:/data/nasa
+      - /srv/data/appdata/astrolearner-iss-live/secrets/youtube-token.json:/data/secrets/youtube-token.json
+      - /srv/data/appdata/astrolearner-iss-live/status:/status
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    group_add:
+      - "${RENDER_GID:-993}"
+    mem_limit: 1g
+    cpus: 3.0
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8092/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  authorize:
+    profiles: ["tools"]
+    image: astrolearner-iss-live:local
+    network_mode: bridge
+    ports:
+      - "127.0.0.1:8093:8093"
+    environment:
+      ISS_LIVE_YOUTUBE_CLIENT_SECRET: /run/secrets/youtube-client-secret.json
+      ISS_LIVE_YOUTUBE_TOKEN: /data/secrets/youtube-token.json
+    volumes:
+      - /srv/data/appdata/astrolearner-iss-live/secrets/youtube-token.json:/data/secrets/youtube-token.json
+      - /srv/data/appdata/astrolearner-iss-live/secrets/youtube-client-secret.json:/run/secrets/youtube-client-secret.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    command: ["python", "-m", "app.authorize"]

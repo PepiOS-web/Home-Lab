@@ -12,6 +12,8 @@ Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX, A
 - No se configuran widgets con tokens o credenciales.
 - AdGuard Home y Tailscale se incorporan como enlaces simples, sin integrar sus APIs.
 - Homepage solo recibe un JSON saneado; no puede leer el journal, el socket de Docker ni el estado privado de Tailscale.
+- El control de AstroLearner usa un token aleatorio guardado en `.env`; Homepage
+  no lo recibe. La página de control lo conserva solo en la sesión de esa pestaña.
 - El resumen elimina IP, puertos, huellas de claves y nombres de dispositivos.
 - `HOMEPAGE_ALLOWED_HOSTS` restringe los encabezados Host a `portal.home.arpa`.
 - `disableIndexing` solicita a buscadores que no indexen la pagina.
@@ -36,3 +38,11 @@ El grupo `Panel operativo` permanece plegado inicialmente. Al abrirlo, carga el 
 Uptime Kuma comprueba `https://portal.home.arpa` cada minuto y confia explicitamente en la autoridad local de Caddy. Una respuesta `200 OK` confirma que el portal responde; no garantiza por si sola que todos los servicios enlazados esten disponibles.
 
 El temporizador `homelab-status.timer` genera un resumen con actividad SSH de las ultimas 24 horas, numero de clientes VPN activos, estado del ultimo backup y lecturas ambientales saneadas. El directorio del resumen se monta en Homepage como solo lectura y el widget `customapi` consulta `homelab-status/status.json` dentro del propio contenedor. Se monta el directorio, no el archivo individual, porque el exportador sustituye el JSON de forma atomica en cada actualizacion.
+
+El control del directo se sirve como una página estática dentro del portal. Caddy
+reenvía únicamente `/iss-live/control/*` al servicio local; el backend exige el
+token de control y el origen `https://portal.home.arpa` para las operaciones
+POST. La página confirma expresamente el inicio público y permite detener la
+emisión. `ISS_LIVE_AUTO_START=false` protege frente a reinicios: el servicio
+vuelve a simulación hasta que alguien pulse «Iniciar emisión pública». El modo
+dry-run continúa bloqueando todos los controles de emisión.

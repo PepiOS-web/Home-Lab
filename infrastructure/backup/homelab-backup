@@ -9,23 +9,33 @@ backup_stamp=$(date -u +%Y%m%d-%H%M%S)
 archive_name="homelab-${backup_stamp}.tar.gz"
 archive="${backup_dir}/${archive_name}"
 temporary="${archive}.part"
-containers_stopped=0
+declare -a running_containers=()
 
 restart_containers() {
-    if [ "$containers_stopped" -eq 1 ]; then
+    if [ "${#running_containers[@]}" -gt 0 ]; then
         echo "Reiniciando contenedores..."
-        /usr/bin/docker start prometheus grafana netalertx uptime-kuma homepage adguardhome caddy \
-            >/dev/null || true
+        /usr/bin/docker start "${running_containers[@]}" >/dev/null || true
+        running_containers=()
     fi
 }
 
-trap restart_containers EXIT
+cleanup() {
+    exit_code=$?
+    trap - EXIT
+    restart_containers
+    /bin/rm -f -- "$temporary"
+    exit "$exit_code"
+}
+
+trap cleanup EXIT
 
 install -d -m 700 "$backup_dir"
 
 echo "Deteniendo servicios con datos persistentes..."
-containers_stopped=1
-/usr/bin/docker stop caddy homepage grafana prometheus uptime-kuma netalertx adguardhome >/dev/null
+mapfile -t running_containers < <(/usr/bin/docker ps --format '{{.Names}}')
+if [ "${#running_containers[@]}" -gt 0 ]; then
+    /usr/bin/docker stop "${running_containers[@]}" >/dev/null
+fi
 
 echo "Creando ${archive_name}..."
 /usr/bin/tar --acls --xattrs -czf "$temporary" \
@@ -53,8 +63,7 @@ echo "Creando ${archive_name}..."
 /bin/chmod 600 "$archive"
 
 echo "Iniciando servicios..."
-/usr/bin/docker start prometheus grafana netalertx uptime-kuma homepage adguardhome caddy >/dev/null
-containers_stopped=0
+restart_containers
 
 echo "Generando y verificando SHA-256..."
 (

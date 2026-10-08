@@ -37,3 +37,6 @@ __pycache__/
 # Runtime data
 data/
 backups/
+
+# Locally prepared third-party camera source (upstream has no declared license)
+infrastructure/docker/a9-v720-hardened/_upstream/

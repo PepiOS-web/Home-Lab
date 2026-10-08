@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}{{ job.topic }} · AstroLearner Factory{% endblock %}
+{% block content %}
+  <p><a class="button secondary" href="/">← Volver</a></p>
+  <h1>{{ job.topic }}</h1>
+  <p><span class="status {{ job.status }}">{{ job.status }}</span> <span class="muted">{{ job.progress }}</span></p>
+
+  {% if job.status in ['queued', 'processing'] %}
+    <div class="warning">El trabajo se está procesando secuencialmente para no saturar el servidor. Esta página se actualizará automáticamente.</div>
+    <script>setTimeout(() => window.location.reload(), 5000);</script>
+  {% endif %}
+
+  {% if job.error %}
+    <div class="error">{{ job.error }}</div>
+    <p><form method="post" action="/jobs/{{ job.id }}/retry"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Reintentar etapa</button></form></p>
+  {% endif %}
+
+  <div class="grid">
+    <section class="card span-12">
+      <h2>Fuentes solicitadas</h2>
+      <ul>{% for url in job.source_urls %}<li><a class="source" href="{{ url }}" rel="noreferrer">{{ url }}</a></li>{% endfor %}</ul>
+    </section>
+
+    {% if job.package %}
+    <section class="card span-7">
+      <h2>Guion</h2>
+      <p><strong>Título seleccionado:</strong> {{ job.package.selected_title }}</p>
+      {% for segment in job.package.segments %}
+      <article class="segment">
+        <h3>{{ segment.heading }}</h3>
+        <p>{{ segment.narration }}</p>
+        <p class="muted">Fuentes: {{ segment.source_ids|join(', ') }} · Visual: {{ segment.visual_direction }} · Tipo: {{ segment.visual_kind }}</p>
+      </article>
+      {% endfor %}
+    </section>
+
+    <aside class="card span-5">
+      <h2>Metadatos</h2>
+      <h3>Opciones de título</h3>
+      <ol>{% for title in job.package.title_options %}<li>{{ title }}</li>{% endfor %}</ol>
+      <h3>Miniatura</h3><p>{{ job.package.thumbnail_text }}</p>
+      <h3>Descripción</h3><p style="white-space: pre-wrap">{{ job.package.description }}</p>
+      <h3>Short</h3>
+      {% for short in job.package.shorts %}
+        <p><strong>{{ short.title }}</strong><br>{{ short.hook }} {{ short.body }} {{ short.call_to_action }}</p>
+      {% endfor %}
+      {% if job.package.warnings %}<h3>Advertencias</h3><ul>{% for warning in job.package.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}
+    </aside>
+    {% endif %}
+
+    {% if job.status == 'script_ready' %}
+    <section class="card span-12">
+      <details>
+        <summary>Editar el guion y los metadatos antes de aprobar</summary>
+        <form method="post" action="/jobs/{{ job.id }}/edit-script">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="title_options">Opciones de título, una por línea (3–5)</label>
+          <textarea id="title_options" name="title_options" required>{{ job.package.title_options|join('\n') }}</textarea>
+
+          <label for="selected_title">Título seleccionado</label>
+          <input id="selected_title" name="selected_title" required maxlength="100"
+                 value="{{ job.package.selected_title }}">
+
+          <label for="description">Descripción</label>
+          <textarea class="tall" id="description" name="description" required>{{ job.package.description }}</textarea>
+
+          <label for="thumbnail_text">Texto de miniatura</label>
+          <input id="thumbnail_text" name="thumbnail_text" required maxlength="45"
+                 value="{{ job.package.thumbnail_text }}">
+
+          {% for segment in job.package.segments %}
+          {% set segment_index = loop.index0 %}
+          <fieldset>
+            <legend>Segmento {{ loop.index }} · fuentes {{ segment.source_ids|join(', ') }}</legend>
+            <label for="segment_heading_{{ segment_index }}">Encabezado</label>
+            <input id="segment_heading_{{ segment_index }}"
+                   name="segment_heading_{{ segment_index }}" required
+                   value="{{ segment.heading }}">
+            <label for="segment_narration_{{ segment_index }}">Narración</label>
+            <textarea class="tall" id="segment_narration_{{ segment_index }}"
+                      name="segment_narration_{{ segment_index }}" required>{{ segment.narration }}</textarea>
+            <label for="segment_visual_{{ segment_index }}">Dirección visual</label>
+            <input id="segment_visual_{{ segment_index }}"
+                   name="segment_visual_{{ segment_index }}" required
+                   value="{{ segment.visual_direction }}">
+            <label for="segment_visual_kind_{{ segment_index }}">Tipo de ilustración</label>
+            <select id="segment_visual_kind_{{ segment_index }}"
+                    name="segment_visual_kind_{{ segment_index }}">
+              {% for kind in ['auto', 'moon_light', 'moon_phases', 'orbit', 'eclipse', 'planet', 'rings', 'star', 'galaxy', 'telescope', 'scale', 'timeline'] %}
+              <option value="{{ kind }}"{% if segment.visual_kind == kind %} selected{% endif %}>{{ kind }}</option>
+              {% endfor %}
+            </select>
+          </fieldset>
+          {% endfor %}
+
+          {% for short in job.package.shorts %}
+          {% set short_index = loop.index0 %}
+          <fieldset>
+            <legend>Short {{ loop.index }} · fuentes {{ short.source_ids|join(', ') }}</legend>
+            <label for="short_title_{{ short_index }}">Título</label>
+            <input id="short_title_{{ short_index }}" name="short_title_{{ short_index }}"
+                   required value="{{ short.title }}">
+            <label for="short_hook_{{ short_index }}">Gancho</label>
+            <textarea id="short_hook_{{ short_index }}"
+                      name="short_hook_{{ short_index }}" required>{{ short.hook }}</textarea>
+            <label for="short_body_{{ short_index }}">Cuerpo</label>
+            <textarea id="short_body_{{ short_index }}"
+                      name="short_body_{{ short_index }}" required>{{ short.body }}</textarea>
+            <label for="short_call_to_action_{{ short_index }}">Llamada a la acción</label>
+            <textarea id="short_call_to_action_{{ short_index }}"
+                      name="short_call_to_action_{{ short_index }}" required>{{ short.call_to_action }}</textarea>
+          </fieldset>
+          {% endfor %}
+
+          <label for="source_summary">Resumen de hechos, uno por línea</label>
+          <textarea id="source_summary" name="source_summary" required>{{ job.package.source_summary|join('\n') }}</textarea>
+
+          <label for="warnings">Advertencias, una por línea; puedes borrar las incorrectas</label>
+          <textarea id="warnings" name="warnings">{{ job.package.warnings|join('\n') }}</textarea>
+
+          <button type="submit">Guardar cambios sin renderizar</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="card span-12">
+      <h2>Primera puerta humana</h2>
+      <p>Comprueba los hechos contra las fuentes. Al aprobar, se generarán la narración, el vídeo 16:9, tres Shorts 9:16, subtítulos y miniatura.</p>
+      <form method="post" action="/jobs/{{ job.id }}/approve-script">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="check"><input type="checkbox" required> He contrastado cifras, periodos y afirmaciones con las fuentes.</label>
+        <label class="check"><input type="checkbox" required> La terminología española es correcta y no contiene palabras inventadas.</label>
+      <label class="check"><input type="checkbox" required> Los tres Shorts, el guion y la descripción no se contradicen.</label>
+        <div class="actions">
+          <button class="approve" type="submit">He revisado el guion: renderizar</button>
+        </div>
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/reject-script">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="secondary" type="submit">Rechazar este borrador</button>
+      </form>
+    </section>
+    {% endif %}
+
+    {% if job.status in ['review_required', 'approved'] %}
+    <section class="card span-7">
+      <h2>Vídeo largo</h2>
+      <video controls preload="metadata" src="/artifacts/{{ job.id }}/render/master-1080p.mp4"></video>
+      <p><a class="button secondary" href="/artifacts/{{ job.id }}/render/master-es.srt">Descargar subtítulos</a></p>
+    </section>
+    <section class="card span-5">
+      <h2>Shorts verticales</h2>
+      {% for short in job.package.shorts %}
+      {% set short_index = loop.index %}
+      <h3>{{ short_index }}. {{ short.title }}</h3>
+      <video controls preload="metadata" src="/artifacts/{{ job.id }}/render/short-{{ '%02d'|format(short_index) }}.mp4"></video>
+      <p><a class="button secondary" href="/artifacts/{{ job.id }}/render/short-{{ '%02d'|format(short_index) }}-es.srt">Subtítulos</a></p>
+      {% endfor %}
+      <p><a class="button secondary" href="/artifacts/{{ job.id }}/render/thumbnail.jpg">Abrir miniatura</a></p>
+    </section>
+    {% endif %}
+
+    {% if job.status == 'review_required' %}
+    <section class="card span-12">
+      <h2>Segunda puerta humana</h2>
+      <div class="warning">Este es un piloto técnico con visuales procedurales. Aprobarlo no lo publica ni lo sube a YouTube.</div>
+      <p><form method="post" action="/jobs/{{ job.id }}/approve-render"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="approve" type="submit">He visto el vídeo completo: aprobar borrador</button></form></p>
+    </section>
+    {% endif %}
+
+    {% if job.status in ['review_required', 'approved'] %}
+    <section class="card span-12">
+      <h2>Volver a renderizar</h2>
+      <p class="muted">Regenera los vídeos con el guion aprobado y la versión actual del motor visual y de audio. No publica nada.</p>
+      <form method="post" action="/jobs/{{ job.id }}/rerender">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="secondary" type="submit">Regenerar ilustraciones y mezcla</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="card span-12">
+      <h2>Registro</h2>
+      <ul class="events">
+      {% for event in events %}<li>[{{ event.created_at }}] {{ event.level|upper }} — {{ event.message }}</li>{% endfor %}
+      </ul>
+    </section>
+  </div>
+{% endblock %}

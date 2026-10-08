@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AstroLearner Factory{% endblock %}</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050817;
+      --panel: #111629;
+      --panel-2: #181e33;
+      --text: #f4f7ff;
+      --muted: #aab4d0;
+      --cyan: #27d1ff;
+      --magenta: #d20069;
+      --green: #41d995;
+      --red: #ff6b7d;
+      --border: #2a3452;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 85% 5%, #351039 0, var(--bg) 38%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header, main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 32px 0 20px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: var(--text); text-decoration: none; }
+    .brand { font-weight: 850; font-size: 1.35rem; letter-spacing: .02em; }
+    .brand span { color: var(--cyan); }
+    .pill { border: 1px solid var(--border); border-radius: 999px; padding: 7px 12px; color: var(--muted); font-size: .84rem; }
+    main { padding-bottom: 64px; }
+    h1, h2, h3 { line-height: 1.15; }
+    h1 { font-size: clamp(2rem, 4vw, 3.7rem); margin: 22px 0 12px; }
+    h2 { margin-top: 0; }
+    p, li { line-height: 1.58; }
+    .muted { color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+    .card {
+      background: linear-gradient(145deg, rgba(24,30,51,.97), rgba(13,18,36,.97));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    }
+    .span-5 { grid-column: span 5; }
+    .span-7 { grid-column: span 7; }
+    .span-12 { grid-column: span 12; }
+    label { display: block; color: var(--muted); margin: 15px 0 7px; font-size: .9rem; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--border); border-radius: 10px;
+      background: #080c1b; color: var(--text); padding: 11px 12px; font: inherit;
+    }
+    input[type="checkbox"] { width: auto; accent-color: var(--green); }
+    textarea { min-height: 125px; resize: vertical; }
+    textarea.tall { min-height: 190px; }
+    fieldset {
+      border: 1px solid var(--border); border-radius: 12px; margin: 18px 0;
+      padding: 16px;
+    }
+    legend { color: var(--cyan); padding: 0 8px; font-weight: 750; }
+    summary { cursor: pointer; color: var(--cyan); font-weight: 750; }
+    .check { display: flex; gap: 10px; align-items: flex-start; color: var(--text); }
+    .check input { margin-top: 5px; }
+    button, .button {
+      display: inline-block; border: 0; border-radius: 10px; background: var(--magenta);
+      color: white; padding: 11px 16px; font-weight: 750; cursor: pointer; text-decoration: none;
+    }
+    button.secondary, .button.secondary { background: #27314e; }
+    button.approve { background: #087e55; }
+    .status { display: inline-block; border-radius: 999px; padding: 5px 9px; background: #252d48; color: var(--cyan); font-size: .8rem; }
+    .status.failed { color: var(--red); }
+    .status.rejected { color: #f7b955; }
+    .status.approved { color: var(--green); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+    td a { color: var(--cyan); text-decoration: none; }
+    .warning { border-left: 4px solid #f7b955; padding: 12px 14px; background: #2a2112; border-radius: 8px; }
+    .error { border-left: 4px solid var(--red); padding: 12px 14px; background: #33131c; border-radius: 8px; white-space: pre-wrap; }
+    .segment { border-left: 3px solid var(--cyan); padding-left: 15px; margin: 20px 0; }
+    .source { word-break: break-all; color: var(--cyan); }
+    video { width: 100%; border-radius: 12px; background: black; max-height: 620px; }
+    .events { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .82rem; }
+    .events li { margin-bottom: 7px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    @media (max-width: 800px) { .span-5, .span-7 { grid-column: span 12; } header { align-items: flex-start; gap: 12px; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">AstroLearner <span>Factory</span></a>
+    <div class="pill">100 % local · publicación desactivada</div>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

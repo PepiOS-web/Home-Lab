@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}AstroLearner Factory{% endblock %}
+{% block content %}
+  <h1>De una fuente científica<br>a un borrador en vídeo.</h1>
+  <p class="muted">Genera localmente un vídeo y tres Shorts con IA, voz, ilustraciones, música, subtítulos y metadatos. Revisión humana antes de publicar.</p>
+
+  <div class="grid">
+    <section class="card span-5">
+      <h2>Nuevo vídeo + Shorts</h2>
+      <form method="post" action="/jobs">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label for="topic">Tema y ángulo</label>
+        <input id="topic" name="topic" required minlength="8" maxlength="240"
+               placeholder="¿Qué ocurriría si Saturno perdiera sus anillos?">
+
+        <label for="source_urls">Fuentes primarias, una URL por línea</label>
+        <textarea id="source_urls" name="source_urls" required
+                  placeholder="https://science.nasa.gov/...&#10;https://www.esa.int/..."></textarea>
+        <p class="muted">Permitidos: {{ allowed_hosts|join(', ') }}. El texto se trata como datos, nunca como instrucciones.</p>
+
+        <label for="target_seconds">Duración del piloto</label>
+        <select id="target_seconds" name="target_seconds">
+          <option value="60">60 segundos</option>
+          <option value="90" selected>90 segundos</option>
+          <option value="120">2 minutos</option>
+          <option value="180">3 minutos</option>
+          <option value="360">6 minutos</option>
+        </select>
+        <p><button type="submit">Generar borrador local</button></p>
+      </form>
+    </section>
+
+    <section class="card span-7">
+      <h2>Trabajos</h2>
+      {% if jobs %}
+      <table>
+        <thead><tr><th>Tema</th><th>Estado</th><th>Actualizado</th></tr></thead>
+        <tbody>
+          {% for job in jobs %}
+          <tr>
+            <td><a href="/jobs/{{ job.id }}">{{ job.topic }}</a></td>
+            <td><span class="status {{ job.status }}">{{ job.status }}</span><br><span class="muted">{{ job.progress }}</span></td>
+            <td>{{ job.updated_at[:16].replace('T', ' ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted">Todavía no hay trabajos. El primer piloto medirá velocidad, memoria y calidad antes de programar automatizaciones.</p>
+      {% endif %}
+      <p class="muted">Modelo configurado: {{ model }}</p>
+    </section>
+  </div>
+{% endblock %}

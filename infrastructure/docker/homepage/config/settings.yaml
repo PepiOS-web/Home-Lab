@@ -31,6 +31,10 @@ layout:
     style: row
     columns: 1
     icon: mdi-home-thermometer
+  IA local:
+    style: row
+    columns: 1
+    icon: mdi-creation
   Proyecto:
     style: row
     columns: 1

@@ -2,7 +2,11 @@
 
 ## Objetivo
 
-El servidor genera una copia consistente cada madrugada. Antes de archivar los datos detiene temporalmente los contenedores que escriben en disco y los inicia nuevamente al terminar. Una funcion registrada con `trap` intenta reiniciarlos incluso cuando el proceso falla.
+El servidor genera una copia consistente cada madrugada. Antes de archivar los
+datos registra todos los contenedores que están activos, los detiene
+temporalmente y reinicia exactamente ese mismo conjunto al terminar. Una
+funcion registrada con `trap` intenta reiniciarlos y elimina el archivo parcial
+incluso cuando el proceso falla.
 
 ## Contenido
 
@@ -30,7 +34,8 @@ El estado `/var/lib/tailscale` se excluye deliberadamente porque contiene la ide
 El temporizador de systemd ejecuta `homelab-backup.service` diariamente. El script:
 
 1. Crea el directorio con permisos restrictivos.
-2. Detiene los servicios con datos persistentes.
+2. Registra y detiene todos los contenedores que estaban activos, incluyendo
+   servicios incorporados posteriormente como AstroLearner.
 3. Genera un archivo temporal comprimido.
 4. Renombra el archivo solo cuando la compresion finaliza.
 5. Reinicia los contenedores.

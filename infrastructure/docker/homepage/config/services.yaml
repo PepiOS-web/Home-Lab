@@ -100,6 +100,45 @@
               format: float
               suffix: " %"
 
+- IA local:
+    - AstroLearner Factory:
+        icon: mdi-telescope
+        href: http://127.0.0.1:8090/
+        description: Guiones, ilustraciones, voz y vídeos; requiere túnel SSH
+
+    - AstroLearner ISS Live:
+        icon: mdi-earth
+        description: Estado de emisión, fuente visual y siguiente reinicio
+        widget:
+          type: customapi
+          url: http://127.0.0.1:3000/iss-live/status.json
+          refreshInterval: 10000
+          mappings:
+            - field: status
+              label: Estado
+              format: text
+            - field: remaining_seconds
+              label: Próximo cambio
+              format: duration
+            - field: source_status
+              label: Fuente ISS
+              format: text
+            - field: updated_at
+              label: Actualizado
+              format: relativeDate
+
+    - Control del directo:
+        icon: mdi-youtube
+        href: https://portal.home.arpa/iss-live/control.html
+        description: Inicia o detiene la emisión pública de YouTube
+        widget:
+          type: iframe
+          name: Control de AstroLearner ISS Live
+          src: "https://portal.home.arpa/iss-live/control.html"
+          classes: h-64
+          referrerPolicy: same-origin
+          loadingStrategy: eager
+
 - Proyecto:
     - GitHub:
         icon: github.png

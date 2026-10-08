@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!_upstream/
+!_upstream/src/
+!_upstream/src/**
+!_upstream/requirements-hardened.txt

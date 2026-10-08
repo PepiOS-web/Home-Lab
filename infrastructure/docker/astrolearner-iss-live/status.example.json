@@ -1,0 +1,22 @@
+{
+  "status": "pendiente de despliegue",
+  "mode": "simulacion",
+  "source_status": "sin configurar",
+  "source_label": "NASA Space Station Views",
+  "block_started_at": null,
+  "next_restart_at": null,
+  "elapsed_seconds": 0,
+  "remaining_seconds": 0,
+  "bitrate": "0 kbit/s",
+  "fps": 0.0,
+  "dropped_frames": 0,
+  "music_track": "AstroLearner Ambient (procedural)",
+  "youtube_watch_url": "",
+  "last_error": "",
+  "restart_count": 0,
+  "updated_at": "2026-10-07T00:00:00Z",
+  "latitude": null,
+  "longitude": null,
+  "altitude_km": null,
+  "velocity_kmh": null
+}
