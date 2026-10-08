@@ -42,6 +42,19 @@ El temporizador de systemd ejecuta `homelab-backup.service` diariamente. El scri
 6. Genera y verifica una suma SHA-256.
 7. Elimina copias diarias con mas de siete dias.
 
+El servicio permite hasta 90 minutos para completar el archivo y verificar su
+SHA-256. Una ejecución anterior alcanzó el límite de 30 minutos durante la
+verificación y systemd la terminó; el resultado del servicio debe comprobarse
+después de cada ejecución:
+
+```bash
+systemctl show homelab-backup.service -p TimeoutStartUSec -p Result -p ExecMainStatus
+```
+
+En el servidor existe un drop-in de systemd con el mismo límite de 90 minutos.
+El archivo versionado y el drop-in se mantienen alineados para que futuras
+instalaciones no vuelvan al límite anterior.
+
 ## Comprobaciones
 
 ```bash

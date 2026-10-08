@@ -17,3 +17,4 @@ del proyecto HomeLab.
 - [2026-09-22 - Prueba de restauracion](2026-09-22-prueba-restauracion.md)
 - [2026-09-24 - Alertas operativas](2026-09-24-alertas-operativas.md)
 - [2026-09-29 - Primer sensor ambiental](2026-09-29-primer-sensor-ambiental.md)
+- [2026-10-08 - AstroLearner y endurecimiento operativo](2026-10-08-astrolearner-y-endurecimiento.md)
