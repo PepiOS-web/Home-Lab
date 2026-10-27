@@ -193,6 +193,21 @@ h2 img {
   max-height: 720px !important;
 }
 
+/* Keep live health, music progress and the metadata editor visible. */
+.service-card iframe[src*="/iss-live/control.html"] {
+  height: 1200px !important;
+  max-height: none !important;
+}
+
+/* Official NASA player is separate from the AstroLearner outgoing stream. */
+.service-card iframe[src^="https://www.youtube.com/embed/awQzjn72bI0"] {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16 / 9;
+  max-height: none !important;
+}
+
 #information-widgets > div {
   min-height: auto !important;
   border: 1px solid var(--line) !important;
@@ -255,4 +270,6 @@ footer,
   }
 
   .service-card iframe { height: 65vh !important; }
+
+  .service-card iframe[src*="/iss-live/control.html"] { height: 1500px !important; }
 }

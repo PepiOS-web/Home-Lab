@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+# Operator-run host maintenance only. No release upgrade, image pulls or reboot.
+set -Eeuo pipefail
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH LC_ALL=C DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l
+umask 077
+
+# This function can be tested without root or side effects.
+classify_plan() {
+    python3 -c '
+import re, sys
+text = sys.stdin.read()
+if any(line.startswith("Remv ") for line in text.splitlines()):
+    sys.exit("Plan rejected: package removals")
+for line in text.splitlines():
+    if not line.startswith("Inst "):
+        continue
+    m = re.fullmatch(r"Inst ([a-z0-9][a-z0-9+.:_-]*) (?:\[[^\]]+\] )?\(([^\s()]+) .+\)", line)
+    if not m:
+        sys.exit("Plan rejected: unrecognised package entry")
+    package, version = m.groups()
+    if not re.fullmatch(r"[A-Za-z0-9.+:~_-]+", version):
+        sys.exit("Plan rejected: unrecognised version")
+    group = "tailscale" if package == "tailscale" else "docker" if package.startswith("docker-") or package == "containerd.io" else "ubuntu"
+    print(group + "\t" + package + "=" + version)
+'
+}
+
+stopped_live() {
+    curl -fsS --max-time 5 http://127.0.0.1:8092/api/status |
+        python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("live_requested") is False and d.get("ffmpeg_running") is False and d.get("status") != "en directo" else 1)'
+}
+
+idle_factories() {
+    local name running
+    for name in astrolearner-factory astrolearner-factory-staging; do
+        running=$(docker inspect --format '{{.State.Running}}' "$name") || return 1
+        if [[ "$running" == true ]]; then
+            docker exec "$name" python -c 'import sqlite3,sys; db=sqlite3.connect("file:/data/factory.sqlite3?mode=ro",uri=True); count=db.execute("SELECT count(*) FROM jobs WHERE status IN (?, ?)",("queued","processing")).fetchone()[0]; db.close(); sys.exit(1 if count else 0)' </dev/null || return 1
+        fi
+    done
+}
+
+tailscale_ready() {
+    timeout 8s tailscale status --json |
+        python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("BackendState")=="Running" and d.get("Self",{}).get("Online") is True else 1)'
+}
+
+containers_ready() {
+    local id health
+    while read -r id; do
+        [[ $(docker inspect --format '{{.State.Running}}' "$id") == true ]] || return 1
+        health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$id") || return 1
+        [[ "$health" == none || "$health" == healthy ]] || return 1
+    done <"$run_dir/running-ids"
+}
+
+restore_containers() {
+    local id
+    local -a missing=()
+    docker info >/dev/null 2>&1 || return 1
+    while read -r id; do
+        [[ $(docker inspect --format '{{.State.Running}}' "$id") == true ]] || missing+=("$id")
+    done <"$run_dir/running-ids"
+    [[ ${#missing[@]} -eq 0 ]] || docker start "${missing[@]}"
+}
+
+service_checks() {
+    systemctl is-active --quiet docker.service &&
+    systemctl is-active --quiet tailscaled.service &&
+    systemctl is-active --quiet ssh.socket &&
+    /usr/sbin/sshd -t &&
+    tailscale_ready &&
+    dig +time=2 +tries=1 +short @"$private_ip" portal.home.arpa | grep -Fxq -- "$private_ip" &&
+    curl -fsS --max-time 5 --cacert /srv/data/appdata/caddy/data/caddy/pki/authorities/local/root.crt \
+        --resolve "portal.home.arpa:443:$private_ip" -o /dev/null https://portal.home.arpa/ &&
+    curl -fsS --max-time 5 -o /dev/null -H 'Host: portal.home.arpa' http://127.0.0.1:8080/ &&
+    curl -fsS --max-time 5 -o /dev/null http://127.0.0.1:3000/api/health &&
+    curl -fsS --max-time 5 -o /dev/null http://127.0.0.1:9090/-/ready &&
+    curl -fsS --max-time 5 -o /dev/null http://127.0.0.1:9100/metrics &&
+    curl -fsS --max-time 5 -o /dev/null http://127.0.0.1:8090/health &&
+    curl -fsS --max-time 5 -o /dev/null http://127.0.0.1:8091/health &&
+    stopped_live
+}
+
+main() {
+    [[ ${EUID} -eq 0 && $# -eq 1 && "$1" == apply ]] || {
+        printf '%s\n' 'Uso: sudo /usr/local/sbin/homelab-update apply' >&2; return 1;
+    }
+    # The job must survive replacement/restart of Docker or Tailscale and SSH loss.
+    [[ -n ${INVOCATION_ID:-} ]] || {
+        printf '%s\n' 'Ejecutar con systemd-run, no dentro de la sesion SSH.' >&2; return 1;
+    }
+    [[ $(. /etc/os-release; printf '%s' "$VERSION_ID") == 24.04 ]] || return 1
+    [[ ! -L /run/homelab-maintenance ]] || return 1
+    install -d -o root -g root -m 700 /run/homelab-maintenance
+    exec 9>/run/homelab-maintenance/update.lock
+    flock -n 9 || { printf '%s\n' 'Ya hay otro mantenimiento.' >&2; return 1; }
+    # Existing camera lock: read-only open, never truncate a user-owned path as root.
+    camera_lock=/srv/data/compose/astrolearner-iss-live/.browser-camera-deploy.lock
+    [[ -f "$camera_lock" && ! -L "$camera_lock" && $(stat -c %u "$camera_lock") == 0 ]] || return 1
+    exec 8<"$camera_lock"
+    flock -n 8 || { printf '%s\n' 'Hay una prueba/despliegue de camara en curso.' >&2; return 1; }
+    stopped_live || { printf '%s\n' 'ABORTADO: detener el directo en el portal.' >&2; return 1; }
+    docker exec astrolearner-iss-live python -c 'from app.config import Settings; import sys; sys.exit(1 if Settings().auto_start else 0)' </dev/null
+    idle_factories || { printf '%s\n' 'ABORTADO: Factory tiene trabajo pendiente o no pudo comprobarse.' >&2; return 1; }
+    mountpoint -q /srv/data || return 1
+    [[ $(df -PB1 / | awk 'NR==2 {print $4}') -ge 5368709120 ]] || return 1
+    [[ $(df -PB1 /boot | awk 'NR==2 {print $4}') -ge 536870912 ]] || return 1
+    [[ $(df -PB1 /srv/data | awk 'NR==2 {print $4}') -ge 2147483648 ]] || return 1
+    [[ -z $(dpkg --audit) ]] || { printf '%s\n' 'ABORTADO: paquetes incompletos.' >&2; return 1; }
+    [[ $(systemctl show homelab-backup.service -p ActiveState --value) == inactive ]] || return 1
+    [[ $(systemctl show homelab-backup.service -p Result --value) == success ]] || return 1
+    [[ $(systemctl show homelab-backup.service -p ExecMainStatus --value) == 0 ]] || return 1
+
+    # Root-only recovery material; never emit configs, credentials or full inspect.
+    [[ ! -L /var/lib/homelab-maintenance ]] || return 1
+    install -d -o root -g root -m 700 /var/lib/homelab-maintenance
+    run_dir=$(mktemp -d /var/lib/homelab-maintenance/update-XXXXXXXX)
+    log="$run_dir/details.log"
+    phase=preflight
+    timer_paused=false
+    finish() {
+        local result=$?
+        trap - EXIT
+        if [[ "$result" -ne 0 && -f "$run_dir/running-ids" ]]; then
+            if ! restore_containers >>"$log" 2>&1; then
+                printf '%s\n' 'No se pudo recuperar todo Docker. Revisar paquetes, motor e IDs anteriores con sudo; no iniciar el directo.' >&2
+            fi
+        fi
+        if [[ "$timer_paused" == true ]]; then
+            systemctl start homelab-backup.timer >>"$log" 2>&1 || result=1
+        fi
+        if [[ "$result" -eq 0 ]]; then
+            printf '%s\n' 'ACTUALIZACION HOST COMPLETADA. Reinicio pendiente: NO ejecutado.'
+        else
+            printf 'MANTENIMIENTO DETENIDO en fase=%s. No se ha solicitado reinicio.\n' "$phase" >&2
+        fi
+        printf 'Registro privado: %s\n' "$run_dir"
+        exit "$result"
+    }
+    trap finish EXIT
+    private_ip=$(ip -j route get 1.1.1.1 | python3 -c 'import ipaddress,json,sys; value=json.load(sys.stdin)[0]["prefsrc"]; ip=ipaddress.ip_address(value); assert ip.version==4 and ip.is_private and not ip.is_loopback; print(ip)')
+    service_checks >>"$log" 2>&1
+    if systemctl is-active --quiet homelab-backup.timer; then
+        timer_paused=true
+        systemctl stop homelab-backup.timer
+    fi
+
+    phase=backup
+    printf '%s\n' 'Verificando backup reciente, sin detener contenedores ni generar otro backup completo...'
+    latest=$(find /srv/data/backups/daily -maxdepth 1 -type f -name 'homelab-????????-??????.tar.gz' -printf '%f\n' | sort | tail -n 1)
+    [[ "$latest" =~ ^homelab-[0-9]{8}-[0-9]{6}\.tar\.gz$ ]]
+    archive="/srv/data/backups/daily/$latest"
+    age=$(( $(date +%s) - $(stat -c %Y "$archive") ))
+    [[ "$age" -ge 0 && "$age" -le 86400 && -f "$archive.sha256" && ! -L "$archive.sha256" ]]
+    read -r expected_hash expected_name < "$archive.sha256"
+    [[ "$expected_hash" =~ ^[a-f0-9]{64}$ && "$expected_name" == "$latest" ]]
+    (cd /srv/data/backups/daily && timeout 1800s sha256sum -c -- "$latest.sha256") >>"$log" 2>&1
+    tar --acls --xattrs -C / -czf "$run_dir/config-before.tar.gz" \
+        etc/apt etc/ssh etc/ufw etc/netplan etc/systemd/system srv/data/compose >>"$log" 2>&1
+    chmod 600 "$run_dir/config-before.tar.gz"
+    dpkg-query -W -f='${binary:Package}\t${Version}\n' >"$run_dir/packages-before.tsv"
+    docker ps -q --no-trunc >"$run_dir/running-ids"
+    docker ps -a --no-trunc --format '{{.ID}} {{.Names}} {{.Image}} {{.Status}}' >"$run_dir/containers-before.txt"
+    while read -r id; do
+        docker inspect --format '{{.Id}} {{.Name}} {{.Image}} {{.HostConfig.RestartPolicy.Name}}' "$id"
+    done <"$run_dir/running-ids" >"$run_dir/images-before.txt"
+
+    phase=apt_plan
+    printf '%s\n' 'Actualizando indices y calculando versiones; se respetan las actualizaciones escalonadas...'
+    apt-get -o APT::Update::Error-Mode=any -o DPkg::Lock::Timeout=120 update >>"$log" 2>&1
+    apt-get -s upgrade >"$run_dir/upgrade-plan.txt" 2>>"$log"
+    classify_plan <"$run_dir/upgrade-plan.txt" >"$run_dir/selected.tsv"
+    stopped_live && idle_factories
+    local group package
+    local -a selected
+    local -a apt_options=(-o DPkg::Lock::Timeout=120 -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold)
+    for group in ubuntu docker tailscale; do
+        selected=()
+        while IFS=$'\t' read -r entry package; do
+            [[ "$entry" != "$group" ]] || selected+=("$package")
+        done <"$run_dir/selected.tsv"
+        [[ ${#selected[@]} -gt 0 ]] || continue
+        phase="$group"
+        stopped_live && idle_factories
+        printf 'Actualizando grupo=%s paquetes=%s (puede interrumpir servicios/conexion)...\n' "$group" "${#selected[@]}"
+        apt-get "${apt_options[@]}" -s --no-remove --only-upgrade install "${selected[@]}" >"$run_dir/$group-plan.txt" 2>>"$log"
+        classify_plan <"$run_dir/$group-plan.txt" >"$run_dir/$group-selected.tsv"
+        # Exact versions from the phased upgrade plan; reject any extra change.
+        while IFS=$'\t' read -r entry package; do
+            [[ "$entry" == "$group" ]]
+            grep -Fxq -- "$entry"$'\t'"$package" "$run_dir/selected.tsv"
+        done <"$run_dir/$group-selected.tsv"
+        apt-get "${apt_options[@]}" -y --no-remove --only-upgrade install "${selected[@]}" >>"$log" 2>&1
+        # Restore only containers that were running, without replacing images.
+        for attempt in $(seq 1 30); do
+            systemctl is-active --quiet docker.service && docker info >>"$log" 2>&1 && break
+            sleep 2
+        done
+        restore_containers >>"$log" 2>&1
+        ready=false
+        for attempt in $(seq 1 60); do
+            if service_checks >>"$log" 2>&1 && containers_ready >>"$log" 2>&1; then ready=true; break; fi
+            sleep 2
+        done
+        [[ "$ready" == true ]]
+        containers_ready >>"$log" 2>&1
+        printf 'Grupo %s actualizado y servicios comprobados.\n' "$group"
+    done
+    phase=final_checks
+    [[ -z $(dpkg --audit) ]]
+    service_checks >>"$log" 2>&1
+    dpkg-query -W -f='${binary:Package}\t${Version}\n' >"$run_dir/packages-after.tsv"
+    apt-get -s upgrade >"$run_dir/remaining-plan.txt" 2>>"$log"
+    systemctl --failed --no-pager >"$run_dir/failed-units-after.txt"
+    printf '%s\n' 'Imagenes de aplicaciones, modelos y ajustes del directo sin modificar. No ejecutar el directo hasta revisar el resultado.'
+}
+
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+    main "$@"
+fi

@@ -20,6 +20,10 @@ La configuracion:
 
 Docker y Tailscale se actualizan manualmente despues de crear y verificar un backup. Tras cada actualizacion se comprueban los servicios, contenedores, firewall, rutas privadas, DNS, HTTPS y SSH.
 
+El procedimiento conservador para esta ronda de actualizaciones está en
+[Mantenimiento manual del host](manual-maintenance.md). No cambia la política
+desatendida ni actualiza imágenes de aplicaciones automáticamente.
+
 ## Verificacion
 
 ```bash

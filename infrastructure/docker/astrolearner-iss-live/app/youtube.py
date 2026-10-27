@@ -1,16 +1,63 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import httplib2
+from google_auth_httplib2 import AuthorizedHttp
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
+from .broadcast_metadata import default_metadata, validate_metadata
+
 SCOPES = ["https://www.googleapis.com/auth/youtube"]
+API_TIMEOUT_SECONDS = 15
+STREAM_STATUSES = {"active", "created", "error", "inactive", "ready"}
+STREAM_HEALTH_STATUSES = {"good", "ok", "bad", "noData"}
+STREAM_ISSUE_SEVERITIES = {"info", "warning", "error"}
+# Only documented diagnostic codes may be copied into public portal status.
+# The free-form reason/description and all ingestion credentials stay private.
+STREAM_ISSUE_TYPES = {
+    "audioBitrateHigh", "audioBitrateLow", "audioBitrateMismatch", "audioCodec",
+    "audioCodecMismatch", "audioSampleRate", "audioSampleRateMismatch",
+    "audioStereoMismatch", "audioTooManyChannels", "badContainer", "bitrateHigh",
+    "bitrateLow", "framerateMismatch", "frameRateHigh", "gopMismatch",
+    "gopSizeLong", "gopSizeOver", "gopSizeShort", "multipleAudioStreams",
+    "multipleVideoStreams", "noAudioStream", "noVideoStream", "openGop",
+    "resolutionMismatch", "videoBitrateMismatch", "videoCodec",
+    "videoCodecMismatch", "videoIngestionStarved", "videoInterlaceMismatch",
+    "videoProfileMismatch", "videoResolutionSuboptimal", "videoResolutionUnsupported",
+}
+
+
+def _known_code(value: object, allowed: set[str]) -> str:
+    return value if isinstance(value, str) and value in allowed else "unknown"
+
+
+def _health_updated_at(value: object) -> str | None:
+    """Convert YouTube's unsigned Unix seconds without trusting malformed data."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return None
+    if isinstance(value, str) and (not value.isascii() or not value.isdecimal()):
+        return None
+    try:
+        seconds = float(value)
+        if not math.isfinite(seconds) or seconds < 0 or not seconds.is_integer():
+            return None
+        return datetime.fromtimestamp(seconds, UTC).isoformat().replace("+00:00", "Z")
+    except (ValueError, OverflowError, OSError):
+        return None
+
+
+class _TimedRequest(Request):
+    def __call__(self, *args, **kwargs):
+        kwargs["timeout"] = API_TIMEOUT_SECONDS
+        return super().__call__(*args, **kwargs)
 
 
 def _write_private(path: Path, content: str) -> None:
@@ -42,53 +89,33 @@ class YouTubeLive:
             raise RuntimeError("Falta la autorización OAuth de YouTube")
         credentials = Credentials.from_authorized_user_file(str(token_path), SCOPES)
         if credentials.expired and credentials.refresh_token:
-            credentials.refresh(Request())
+            credentials.refresh(_TimedRequest())
             _write_private(token_path, credentials.to_json())
         if not credentials.valid:
             raise RuntimeError("La autorización OAuth de YouTube no es válida")
-        self.api = build(
-            "youtube", "v3", credentials=credentials, cache_discovery=False
-        )
+        transport = AuthorizedHttp(credentials, http=httplib2.Http(timeout=API_TIMEOUT_SECONDS))
+        self.api = build("youtube", "v3", http=transport, cache_discovery=False)
         self.privacy = privacy
         self.source_label = source_label.strip()
 
-    def create(self, block_seconds: int) -> Broadcast:
+    def create(
+        self, block_seconds: int, *, title: str | None = None,
+        description: str | None = None,
+    ) -> Broadcast:
         now = datetime.now(UTC)
         stamp = now.astimezone().strftime("%d/%m/%Y %H:%M")
-        if "NASA IMAGE" in self.source_label.upper():
-            visual_description = (
-                "Fondo visual: vídeos grabados de NASA Johnson Space Center e "
-                "imágenes recientes de NASA EPIC/DSCOVR. No es una cámara en "
-                "directo desde la ISS."
-            )
-        elif "NASA EPIC" in self.source_label.upper():
-            visual_description = (
-                "Fondo visual: imágenes recientes de NASA EPIC/DSCOVR. "
-                "No es una cámara en directo desde la ISS."
-            )
-        else:
-            visual_description = (
-                f"Fuente visual autorizada: {self.source_label}."
-                if self.source_label
-                else "Fuente visual autorizada configurada por AstroLearner."
-            )
+        defaults = default_metadata(self.source_label)
+        metadata = validate_metadata(
+            title if title is not None else f"{defaults['title']} | {stamp}",
+            description if description is not None else defaults["description"],
+        )
         broadcast = (
             self.api.liveBroadcasts()
             .insert(
                 part="snippet,status,contentDetails",
                 body={
                     "snippet": {
-                        "title": (
-                            "ISS en tiempo real · mapa orbital y Tierra | "
-                            f"{stamp}"
-                        ),
-                        "description": (
-                            "Seguimiento automatizado de la posición de la ISS con mapas "
-                            "y datos orbitales actualizados en tiempo real. "
-                            f"{visual_description} "
-                            "Música ambiental procedural creada localmente, sin micrófono. "
-                            "AstroLearner es un canal independiente no afiliado a NASA."
-                        ),
+                        **metadata,
                         "scheduledStartTime": (now + timedelta(seconds=45)).isoformat(),
                         "scheduledEndTime": (
                             now + timedelta(seconds=block_seconds + 180)
@@ -100,7 +127,9 @@ class YouTubeLive:
                     },
                     "contentDetails": {
                         "enableAutoStart": True,
-                        "enableAutoStop": True,
+                        # A brief RTMP outage must not finalize the video while
+                        # the controller reconnects to its original stream.
+                        "enableAutoStop": False,
                         "enableDvr": True,
                         "recordFromStart": True,
                         "monitorStream": {"enableMonitorStream": False},
@@ -138,6 +167,30 @@ class YouTubeLive:
             watch_url=f"https://www.youtube.com/watch?v={broadcast['id']}",
         )
 
+    def update_metadata(self, broadcast_id: str, title: str, description: str) -> bool:
+        """Edit only the matching video's snippet, never stream/privacy controls."""
+        metadata = validate_metadata(title, description)
+        result = self.api.videos().list(part="snippet", id=broadcast_id).execute()
+        items = result.get("items", [])
+        if not items:
+            raise BroadcastUnavailableError("YouTube ya no encuentra el directo actual")
+        snippet = items[0].get("snippet", {})
+        if not snippet.get("categoryId"):
+            raise RuntimeError("YouTube no devolvió la categoría del directo")
+        if all(snippet.get(key, "") == value for key, value in metadata.items()):
+            return False
+        # Updating a part replaces its writable fields. Preserve existing values
+        # and omit read-only snippet fields such as thumbnails/channel/publishedAt.
+        writable = {
+            key: snippet[key]
+            for key in ("categoryId", "tags", "defaultLanguage", "defaultAudioLanguage")
+            if key in snippet
+        }
+        self.api.videos().update(
+            part="snippet", body={"id": broadcast_id, "snippet": {**writable, **metadata}}
+        ).execute()
+        return True
+
     def complete(self, broadcast_id: str) -> None:
         item = self.api.liveBroadcasts().list(part="status", id=broadcast_id).execute()
         if item.get("items") and item["items"][0]["status"]["lifeCycleStatus"] in {
@@ -162,6 +215,36 @@ class YouTubeLive:
         return {
             "life_cycle_status": status.get("lifeCycleStatus", "unknown"),
             "privacy_status": status.get("privacyStatus", "unknown"),
+        }
+
+    def stream_health(self, stream_id: str) -> dict[str, object] | None:
+        """Read ingest health, exporting only safe diagnostic enums to the portal."""
+        result = self.api.liveStreams().list(part="status", id=stream_id).execute()
+        items = result.get("items", []) if isinstance(result, dict) else []
+        if not isinstance(items, list) or not items:
+            return None
+        item = items[0] if isinstance(items[0], dict) else {}
+        status = item.get("status", {})
+        status = status if isinstance(status, dict) else {}
+        health = status.get("healthStatus", {})
+        health = health if isinstance(health, dict) else {}
+        raw_issues = health.get("configurationIssues", [])
+        issues = []
+        if isinstance(raw_issues, list):
+            for issue in raw_issues:
+                if not isinstance(issue, dict):
+                    continue
+                issues.append({
+                    "type": _known_code(issue.get("type"), STREAM_ISSUE_TYPES),
+                    "severity": _known_code(issue.get("severity"), STREAM_ISSUE_SEVERITIES),
+                })
+                if len(issues) >= 8:
+                    break
+        return {
+            "stream_status": _known_code(status.get("streamStatus"), STREAM_STATUSES),
+            "health_status": _known_code(health.get("status"), STREAM_HEALTH_STATUSES),
+            "health_updated_at": _health_updated_at(health.get("lastUpdateTimeSeconds")),
+            "issues": issues,
         }
 
 

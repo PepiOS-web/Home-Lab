@@ -329,6 +329,87 @@ def _render_segment(
     )
 
 
+def _render_segment_with_clip(
+    image: Path,
+    audio: Path,
+    clip: Path,
+    output: Path,
+    duration: float,
+    width: int,
+    height: int,
+    settings: Settings,
+) -> None:
+    """Use an imported AI clip as a brief insert, then fall back to the old art.
+
+    The uploaded clip's audio is deliberately ignored. It is never interpreted as
+    a playlist or URL; FFmpeg receives only the already-validated local MP4 path.
+    """
+    zoom_filter = (
+        f"scale={width}:{height},"
+        f"zoompan=z='min(pzoom+0.00025,1.055)':"
+        f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+        f"d=1:s={width}x{height}:fps=30,format=yuv420p"
+    )
+    clip_filter = (
+        f"fps=30,scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},setsar=1,format=yuv420p,"
+        "setpts=PTS-STARTPTS"
+    )
+    filter_complex = (
+        f"[0:v]{zoom_filter}[base];"
+        f"[2:v]{clip_filter}[insert];"
+        "[base][insert]overlay=0:0:eof_action=pass:repeatlast=0:shortest=0[v]"
+    )
+    _run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-loop",
+            "1",
+            "-framerate",
+            "30",
+            "-i",
+            str(image),
+            "-i",
+            str(audio),
+            "-protocol_whitelist",
+            "file",
+            "-i",
+            str(clip),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[v]",
+            "-map",
+            "1:a:0",
+            "-t",
+            f"{duration:.3f}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "21",
+            "-threads",
+            str(settings.ffmpeg_threads),
+            "-c:a",
+            "aac",
+            "-b:a",
+            "160k",
+            "-ar",
+            "48000",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            str(output),
+        ]
+    )
+
+
 def _concat_and_normalize(
     segment_files: list[Path], output: Path, settings: Settings
 ) -> dict[str, object] | None:
@@ -399,11 +480,14 @@ def _render_sequence(
     width: int,
     height: int,
     prefix: str,
+    scene_clips_dir: Path | None = None,
+    scene_offset: int = 0,
 ) -> dict[str, object]:
     work_dir = output.parent
     segment_files: list[Path] = []
     caption_entries: list[tuple[float, float, str]] = []
     resolved_kinds: list[str] = []
+    used_clips: list[str] = []
     clock = 0.0
 
     for index, (heading, narration, visual_direction, visual_kind) in enumerate(
@@ -423,14 +507,29 @@ def _render_sequence(
         )
         resolved_kinds.append(resolved_kind)
         duration = synthesize_speech(narration, audio, settings)
-        _render_segment(image, audio, video, duration, width, height, settings)
+        clip = (
+            scene_clips_dir / f"scene-{scene_offset + index:02d}.mp4"
+            if scene_clips_dir is not None
+            else None
+        )
+        if clip is not None and clip.is_file():
+            _render_segment_with_clip(
+                image, audio, clip, video, duration, width, height, settings
+            )
+            used_clips.append(f"assets/{clip.name}")
+        else:
+            _render_segment(image, audio, video, duration, width, height, settings)
         segment_files.append(video)
         caption_entries.append((clock, clock + duration, narration))
         clock += duration
 
     music_metadata = _concat_and_normalize(segment_files, output, settings)
     _write_srt(captions, caption_entries)
-    return {"visual_kinds": resolved_kinds, "music": music_metadata}
+    return {
+        "visual_kinds": resolved_kinds,
+        "music": music_metadata,
+        "ai_video_clips": used_clips,
+    }
 
 
 def render_package(
@@ -464,6 +563,7 @@ def render_package(
         width=1920,
         height=1080,
         prefix="long",
+        scene_clips_dir=job_dir / "assets",
     )
 
     short_outputs: list[Path] = []
@@ -510,15 +610,61 @@ def render_package(
         short_outputs.append(short_output)
         short_captions.append(short_srt)
 
+    derived_short_output: Path | None = None
+    derived_short_captions: Path | None = None
+    derived_short_metadata: dict[str, object] | None = None
+    derived_short = package.derived_short
+    if derived_short is not None:
+        segment = package.segments[derived_short.segment_index]
+        derived_short_output = render_dir / "short-from-long.mp4"
+        derived_short_captions = render_dir / "short-from-long-es.srt"
+        derived_short_metadata = _render_sequence(
+            [
+                (
+                    derived_short.title,
+                    derived_short.excerpt,
+                    segment.visual_direction,
+                    segment.visual_kind,
+                )
+            ],
+            derived_short_output,
+            derived_short_captions,
+            settings,
+            width=1080,
+            height=1920,
+            prefix="short-from-long",
+            scene_clips_dir=job_dir / "assets",
+            scene_offset=derived_short.segment_index,
+        )
+
+    uploaded_long_clips = long_metadata.get("ai_video_clips", [])
+    has_uploaded_clips = bool(uploaded_long_clips)
+
     licenses = {
         "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
         "visuals": {
-            "type": "procedural_scientific_original",
+            "type": (
+                "procedural_scientific_with_user_supplied_ai_clips"
+                if has_uploaded_clips
+                else "procedural_scientific_original"
+            ),
             "generator": "AstroLearner Factory/Pillow",
             "long_renderers": long_metadata["visual_kinds"],
             "short_renderers": [item["visual_kinds"] for item in short_metadata],
+            "ai_video_clips": uploaded_long_clips,
+            "derived_short_ai_video_clips": (
+                derived_short_metadata.get("ai_video_clips", [])
+                if derived_short_metadata
+                else []
+            ),
             "notice": "Ilustraciones esquemáticas originales; no están a escala.",
             "third_party_assets": [],
+            "review_note": (
+                "Los clips importados fueron aportados por el usuario. Verificar "
+                "licencia, atribución y si corresponde declarar contenido sintético."
+                if has_uploaded_clips
+                else "Sin clips externos; las ilustraciones y música son originales."
+            ),
         },
         "voice": {
             "engine": "Piper",
@@ -558,14 +704,34 @@ def render_package(
         "warning": (
             "Piloto con ilustraciones científicas originales y música procedural. "
             "Verificar diagramas, voz, mezcla y subtítulos antes de publicar."
+            + (
+                " Revisar también la licencia y el etiquetado de los clips IA importados."
+                if has_uploaded_clips
+                else ""
+            )
         ),
     }
+    if derived_short_output is not None and derived_short_captions is not None:
+        manifest["artifacts"]["short_from_long"] = (
+            f"render/{derived_short_output.name}"
+        )
+        manifest["artifacts"]["short_from_long_captions"] = (
+            f"render/{derived_short_captions.name}"
+        )
+        manifest["derived_short"] = {
+            "source_segment_index": derived_short.segment_index,
+            "excerpt": derived_short.excerpt,
+            "selection": "literal_contiguous_script_excerpt",
+        }
     (job_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
     digest = hashlib.sha256()
-    for artifact in (master, *short_outputs, thumbnail, master_srt, *short_captions):
+    artifacts_to_hash = [master, *short_outputs, thumbnail, master_srt, *short_captions]
+    if derived_short_output is not None and derived_short_captions is not None:
+        artifacts_to_hash.extend([derived_short_output, derived_short_captions])
+    for artifact in artifacts_to_hash:
         with artifact.open("rb") as handle:
             for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                 digest.update(chunk)

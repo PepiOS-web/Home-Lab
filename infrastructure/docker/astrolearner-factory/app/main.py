@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import json
 import logging
+import math
+import os
 import secrets
 import shutil
+import subprocess
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -11,11 +15,12 @@ from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
+from starlette.datastructures import UploadFile
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .config import settings
 from .db import Database
-from .llm import ollama_health, validate_package_length
+from .llm import _derive_short_from_long, ollama_health, validate_package_length
 from .pipeline import save_content_package
 from .schemas import ContentPackage
 from .sources import validate_source_url
@@ -33,6 +38,10 @@ worker = SerialWorker(database, settings)
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 CSRF_TOKEN = secrets.token_urlsafe(32)
 MAX_FORM_BYTES = 200_000
+MAX_SCENE_CLIP_BYTES = 80 * 1024 * 1024
+MAX_JOB_SCENE_CLIPS_BYTES = 256 * 1024 * 1024
+MAX_SCENE_CLIP_DURATION = 20.0
+MAX_SCENE_CLIP_DIMENSION = 3840
 
 
 @asynccontextmanager
@@ -63,9 +72,25 @@ app.add_middleware(
 async def security_headers(request: Request, call_next):
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         content_length = request.headers.get("content-length")
+        is_scene_clip_upload = (
+            request.method == "POST"
+            and request.url.path.startswith("/jobs/")
+            and "/segments/" in request.url.path
+            and request.url.path.endswith("/clip")
+        )
+        max_body_bytes = (
+            MAX_SCENE_CLIP_BYTES + 1024 * 1024
+            if is_scene_clip_upload
+            else MAX_FORM_BYTES
+        )
+        if is_scene_clip_upload and not content_length:
+            return JSONResponse(
+                {"detail": "La subida debe incluir Content-Length"},
+                status_code=411,
+            )
         if content_length:
             try:
-                if int(content_length) > MAX_FORM_BYTES:
+                if int(content_length) > max_body_bytes:
                     return JSONResponse(
                         {"detail": "El formulario supera el límite permitido"},
                         status_code=413,
@@ -204,6 +229,15 @@ def job_detail(request: Request, job_id: str) -> HTMLResponse:
     job = database.get_job(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Trabajo no encontrado")
+    scene_clips: list[bool] = []
+    if job.package and job.output_dir:
+        job_dir = Path(job.output_dir).resolve()
+        if job_dir.is_relative_to(settings.jobs_dir.resolve()):
+            assets_dir = job_dir / "assets"
+            scene_clips = [
+                (assets_dir / f"scene-{index:02d}.mp4").is_file()
+                for index in range(1, len(job.package.segments) + 1)
+            ]
     return templates.TemplateResponse(
         request=request,
         name="job.html",
@@ -211,6 +245,7 @@ def job_detail(request: Request, job_id: str) -> HTMLResponse:
             "job": job,
             "events": database.get_events(job_id),
             "csrf_token": CSRF_TOKEN,
+            "scene_clips": scene_clips,
         },
     )
 
@@ -274,6 +309,10 @@ async def edit_script(request: Request, job_id: str) -> RedirectResponse:
                     "visual_kind": _required_form_text(
                         form, f"segment_visual_kind_{index}"
                     ),
+                    "video_prompt_en": (
+                        str(form.get(f"segment_video_prompt_{index}", "")).strip()
+                        or None
+                    ),
                     "source_ids": original.source_ids,
                 }
             )
@@ -310,6 +349,13 @@ async def edit_script(request: Request, job_id: str) -> RedirectResponse:
             }
         )
         validate_package_length(package, job.target_seconds)
+        package = package.model_copy(
+            update={
+                "derived_short": _derive_short_from_long(
+                    package, job.target_seconds
+                )
+            }
+        )
     except (ValueError, ValidationError) as exc:
         raise HTTPException(
             status_code=400,
@@ -321,6 +367,164 @@ async def edit_script(request: Request, job_id: str) -> RedirectResponse:
         raise HTTPException(status_code=500, detail="Ruta de trabajo no válida")
     save_content_package(job_dir, package)
     database.update_package(job_id, package)
+    return RedirectResponse(url=f"/jobs/{job_id}", status_code=303)
+
+
+@app.post("/jobs/{job_id}/segments/{segment_index}/clip")
+async def upload_scene_clip(
+    request: Request, job_id: str, segment_index: int
+) -> RedirectResponse:
+    """Attach one short, local MP4 insert to a long-video script segment."""
+    job = database.get_job(job_id)
+    if (
+        job is None
+        or job.status != "script_ready"
+        or job.package is None
+        or job.output_dir is None
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Solo puedes añadir escenas antes de aprobar el guion",
+        )
+    if not 0 <= segment_index < len(job.package.segments):
+        raise HTTPException(status_code=404, detail="Segmento no encontrado")
+
+    form = await request.form(
+        max_files=1,
+        max_fields=2,
+        max_part_size=MAX_SCENE_CLIP_BYTES,
+    )
+    try:
+        _require_csrf(str(form.get("csrf_token", "")))
+        upload = form.get("clip")
+        if not isinstance(upload, UploadFile):
+            raise HTTPException(status_code=400, detail="Selecciona un archivo MP4")
+        if Path(upload.filename or "").suffix.lower() != ".mp4":
+            raise HTTPException(status_code=400, detail="Solo se aceptan archivos .mp4")
+        if upload.content_type not in {"video/mp4", "application/octet-stream"}:
+            raise HTTPException(status_code=400, detail="El archivo debe ser un MP4")
+
+        job_dir = Path(job.output_dir).resolve()
+        if not job_dir.is_relative_to(settings.jobs_dir.resolve()):
+            raise HTTPException(status_code=500, detail="Ruta de trabajo no válida")
+        assets_dir = job_dir / "assets"
+        assets_dir.mkdir(parents=True, exist_ok=True)
+        if not assets_dir.resolve().is_relative_to(job_dir):
+            raise HTTPException(status_code=500, detail="Ruta de escenas no válida")
+
+        clip_number = segment_index + 1
+        target = assets_dir / f"scene-{clip_number:02d}.mp4"
+        temporary = assets_dir / f".scene-{clip_number:02d}-{secrets.token_hex(8)}.part"
+        received = 0
+        try:
+            with temporary.open("xb") as output:
+                while chunk := await upload.read(1024 * 1024):
+                    received += len(chunk)
+                    if received > MAX_SCENE_CLIP_BYTES:
+                        raise HTTPException(
+                            status_code=413,
+                            detail="El clip supera el máximo de 80 MiB",
+                        )
+                    output.write(chunk)
+            if received < 1024:
+                raise HTTPException(
+                    status_code=400, detail="El clip está vacío o incompleto"
+                )
+
+            probe = subprocess.run(
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-protocol_whitelist",
+                    "file",
+                    "-select_streams",
+                    "v:0",
+                    "-show_entries",
+                    "stream=codec_name,width,height,duration:format=duration",
+                    "-of",
+                    "json",
+                    str(temporary),
+                ],
+                text=True,
+                capture_output=True,
+                timeout=20,
+                check=False,
+            )
+            if probe.returncode != 0:
+                raise HTTPException(status_code=400, detail="FFprobe no reconoce el clip")
+            try:
+                metadata = json.loads(probe.stdout)
+                video_streams = metadata.get("streams", [])
+                stream = video_streams[0] if video_streams else {}
+                duration = float(
+                    metadata.get("format", {}).get("duration")
+                    or stream.get("duration")
+                    or 0
+                )
+                width = int(stream.get("width", 0))
+                height = int(stream.get("height", 0))
+                codec = stream.get("codec_name")
+            except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+                raise HTTPException(
+                    status_code=400, detail="Metadatos de vídeo no válidos"
+                ) from exc
+
+            if codec != "h264":
+                raise HTTPException(
+                    status_code=400,
+                    detail="El clip debe usar vídeo H.264 dentro del contenedor MP4",
+                )
+            if not (256 <= width <= MAX_SCENE_CLIP_DIMENSION) or not (
+                256 <= height <= MAX_SCENE_CLIP_DIMENSION
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="La resolución del clip debe estar entre 256 y 3840 píxeles",
+                )
+            if not math.isfinite(duration) or not 1 <= duration <= MAX_SCENE_CLIP_DURATION:
+                raise HTTPException(
+                    status_code=400,
+                    detail="La duración del clip debe estar entre 1 y 20 segundos",
+                )
+
+            # Serialize the final status check, aggregate-size check and atomic
+            # rename with other uploads and the approve-script DB transition.
+            # This prevents a concurrent approval from rendering mid-upload and
+            # stops parallel requests from exceeding the per-job storage cap.
+            with database.connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                latest_job = connection.execute(
+                    "SELECT status FROM jobs WHERE id = ?", (job_id,)
+                ).fetchone()
+                if latest_job is None or latest_job["status"] != "script_ready":
+                    raise HTTPException(
+                        status_code=409,
+                        detail="El guion se aprobó mientras se subía el clip; no se guardó",
+                    )
+                existing_bytes = sum(
+                    path.stat().st_size
+                    for path in assets_dir.glob("scene-*.mp4")
+                    if path.is_file() and path != target
+                )
+                if existing_bytes + received > MAX_JOB_SCENE_CLIPS_BYTES:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="Los clips de este trabajo superarían el límite de 256 MiB",
+                    )
+                os.replace(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+    except HTTPException:
+        raise
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        LOGGER.warning("No se pudo validar el clip de escena: %s", exc)
+        raise HTTPException(
+            status_code=400, detail="No se pudo guardar o validar el clip"
+        ) from exc
+    finally:
+        await form.close()
+
     return RedirectResponse(url=f"/jobs/{job_id}", status_code=303)
 
 

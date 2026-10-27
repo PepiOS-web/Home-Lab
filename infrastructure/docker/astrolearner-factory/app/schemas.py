@@ -32,6 +32,9 @@ class ScriptSegment(BaseModel):
         "scale",
         "timeline",
     ] = "auto"
+    # Optional prompt for a short AI-generated insert. Older saved jobs do not
+    # contain this field, so it must remain optional and must not affect render.
+    video_prompt_en: str | None = Field(default=None, max_length=1000)
     source_ids: list[str] = Field(min_length=1, max_length=6)
 
 
@@ -43,6 +46,15 @@ class ShortDraft(BaseModel):
     source_ids: list[str] = Field(min_length=1, max_length=6)
 
 
+class DerivedShort(BaseModel):
+    """A verbatim, contiguous excerpt from one long-form script segment."""
+
+    title: str = Field(min_length=5, max_length=100)
+    excerpt: str = Field(min_length=80, max_length=750)
+    segment_index: int = Field(ge=0, le=9)
+    source_ids: list[str] = Field(min_length=1, max_length=6)
+
+
 class ContentPackage(BaseModel):
     language: Literal["es-ES"]
     title_options: list[str] = Field(min_length=3, max_length=5)
@@ -51,6 +63,8 @@ class ContentPackage(BaseModel):
     thumbnail_text: str = Field(min_length=2, max_length=45)
     segments: list[ScriptSegment] = Field(min_length=3, max_length=10)
     shorts: list[ShortDraft] = Field(min_length=1, max_length=3)
+    # Added as a sidecar; legacy short drafts remain untouched.
+    derived_short: DerivedShort | None = None
     source_summary: list[str] = Field(min_length=1, max_length=10)
     warnings: list[str] = Field(default_factory=list, max_length=10)
 

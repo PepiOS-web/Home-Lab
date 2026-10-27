@@ -1,0 +1,35 @@
+# No publishing credentials. Start only after stopping the public live in portal.
+services:
+  camera-browser:
+    extends:
+      file: compose.camera-browser.yaml
+      service: camera-browser
+    # Building a trial must not replace the production image tag.
+    image: astrolearner-iss-camera-browser:fps-trial
+    environment:
+      # Local-only test selected by the operator; no YouTube publishing.
+      ISS_BROWSER_MAP_OVERLAY: esa
+      ISS_BROWSER_FPS: ${ISS_CAMERA_TEST_FPS:-12}
+    ports:
+      - "127.0.0.1:8095:8093"
+  camera-staging:
+    extends:
+      file: compose.camera-staging.yaml
+      service: camera-staging
+    # Match the existing production encoder budget, not the generic low-load test.
+    cpus: 3.0
+    mem_limit: 1g
+    pids_limit: 128
+    environment:
+      ISS_LIVE_CAMERA_URL: http://camera-browser:8093/camera.mjpeg
+      ISS_LIVE_CAMERA_AUTHORIZED: ${ISS_BROWSER_CAPTURE_AUTHORIZED:-false}
+      ISS_LIVE_MAP_SECONDS: "0"
+      ISS_CAMERA_PROBE_EXPECT_MAP: esa
+      ISS_CAMERA_PROBE_MUSIC: hourly
+      ISS_LIVE_FPS: ${ISS_CAMERA_TEST_FPS:-12}
+    volumes:
+      # Audio only, read-only. Never mount OAuth tokens or production status.
+      - /srv/data/appdata/astrolearner-iss-live/music:/production-music:ro
+    depends_on:
+      camera-browser:
+        condition: service_started

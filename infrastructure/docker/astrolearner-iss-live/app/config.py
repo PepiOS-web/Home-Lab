@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,6 +43,27 @@ class Settings:
     )
     source_url: str = field(
         default_factory=lambda: os.getenv("ISS_LIVE_SOURCE_URL", "").strip()
+    )
+    camera_enabled: bool = field(
+        default_factory=lambda: _bool("ISS_LIVE_CAMERA_ENABLED", False)
+    )
+    camera_url: str = field(
+        default_factory=lambda: os.getenv("ISS_LIVE_CAMERA_URL", "")
+    )
+    camera_authorized: bool = field(
+        default_factory=lambda: _bool("ISS_LIVE_CAMERA_AUTHORIZED", False)
+    )
+    camera_mode: str = field(
+        default_factory=lambda: os.getenv("ISS_LIVE_CAMERA_MODE", "auto").strip().lower()
+    )
+    camera_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("ISS_LIVE_CAMERA_TIMEOUT_SECONDS", "8"))
+    )
+    camera_stable_seconds: float = field(
+        default_factory=lambda: float(os.getenv("ISS_LIVE_CAMERA_STABLE_SECONDS", "15"))
+    )
+    camera_retry_seconds: float = field(
+        default_factory=lambda: float(os.getenv("ISS_LIVE_CAMERA_RETRY_SECONDS", "30"))
     )
     source_label: str = field(
         default_factory=lambda: os.getenv(
@@ -137,4 +159,70 @@ class Settings:
             if parsed.hostname in {"youtube.com", "www.youtube.com", "youtu.be"}:
                 raise ValueError(
                     "ISS_LIVE_SOURCE_URL must not be a YouTube watch-page URL"
+                )
+        if self.camera_mode not in {"auto", "fallback", "map"}:
+            raise ValueError("ISS_LIVE_CAMERA_MODE must be auto, fallback or map")
+        if self.camera_enabled and not (
+            160 <= self.width <= 1920 and 90 <= self.height <= 1080 and 1 <= self.fps <= 30
+        ):
+            raise ValueError("Camera selector dimensions/FPS exceed the supported limits")
+        for name, value, minimum, maximum in (
+            ("TIMEOUT_SECONDS", self.camera_timeout_seconds, 2, 60),
+            ("STABLE_SECONDS", self.camera_stable_seconds, 5, 120),
+            ("RETRY_SECONDS", self.camera_retry_seconds, 5, 300),
+        ):
+            if not math.isfinite(value) or not minimum <= value <= maximum:
+                raise ValueError(
+                    f"ISS_LIVE_CAMERA_{name} must be finite and between {minimum} and {maximum}"
+                )
+        if self.camera_stable_seconds < self.camera_timeout_seconds:
+            raise ValueError(
+                "ISS_LIVE_CAMERA_STABLE_SECONDS must not be shorter than the camera timeout"
+            )
+        if self.camera_retry_seconds < self.camera_timeout_seconds:
+            raise ValueError(
+                "ISS_LIVE_CAMERA_RETRY_SECONDS must not be shorter than the camera timeout"
+            )
+        if self.camera_url:
+            self._validate_camera_url()
+        if (
+            self.camera_enabled
+            and self.camera_mode == "auto"
+            and self.camera_url
+            and not self.camera_authorized
+        ):
+            raise ValueError(
+                "Set ISS_LIVE_CAMERA_AUTHORIZED=true only after confirming permission to receive and retransmit the camera source"
+            )
+
+    def _validate_camera_url(self) -> None:
+        # A signed input URL may contain a secret: never include it in diagnostics.
+        message = "ISS_LIVE_CAMERA_URL must be a direct HTTP(S) URL without credentials, whitespace, control characters or fragments"
+        if any(char.isspace() or ord(char) < 32 or ord(char) == 127 for char in self.camera_url):
+            raise ValueError(message)
+        try:
+            parsed = urlparse(self.camera_url)
+            hostname = parsed.hostname
+            # Accessing port also rejects malformed or out-of-range ports.
+            parsed.port
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.netloc
+                or not hostname
+                or parsed.username is not None
+                or parsed.password is not None
+                or "#" in self.camera_url
+                or "\\" in parsed.netloc
+                or "%" in hostname
+            ):
+                raise ValueError(message)
+        except ValueError:
+            raise ValueError(message) from None
+        hostname = hostname.lower().rstrip(".")
+        for blocked_host in (
+            "youtube.com", "youtu.be", "youtube-nocookie.com", "googlevideo.com"
+        ):
+            if hostname == blocked_host or hostname.endswith("." + blocked_host):
+                raise ValueError(
+                    "ISS_LIVE_CAMERA_URL must not be a YouTube page or an extracted YouTube delivery URL; use an authorized direct camera source"
                 )

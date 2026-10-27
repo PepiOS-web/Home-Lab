@@ -1,0 +1,53 @@
+# Isolated camera preparation: no publishing credentials or production writes.
+# Run from this directory, without the production .env:
+# docker compose --env-file camera-staging.env.example -f compose.camera-staging.yaml up --build -d
+services:
+  camera-staging:
+    build:
+      context: .
+      args:
+        APP_UID: "1000"
+        APP_GID: "1000"
+    image: astrolearner-iss-live:camera-staging
+    container_name: astrolearner-iss-camera-staging
+    restart: "no"
+    ports:
+      - "127.0.0.1:8094:8092"
+    environment:
+      ISS_LIVE_DRY_RUN: "true"
+      ISS_LIVE_AUTO_START: "false"
+      ISS_LIVE_CONTROL_TOKEN: ""
+      ISS_LIVE_CAMERA_ENABLED: "true"
+      ISS_LIVE_CAMERA_URL: ${ISS_LIVE_CAMERA_URL:-}
+      ISS_LIVE_CAMERA_AUTHORIZED: ${ISS_LIVE_CAMERA_AUTHORIZED:-false}
+      ISS_LIVE_CAMERA_MODE: ${ISS_LIVE_CAMERA_MODE:-auto}
+      ISS_LIVE_CAMERA_TIMEOUT_SECONDS: "8"
+      ISS_LIVE_CAMERA_STABLE_SECONDS: "15"
+      ISS_LIVE_CAMERA_RETRY_SECONDS: "30"
+      ISS_LIVE_USE_NASA_PLAYLIST: "true"
+      ISS_LIVE_NASA_LOOP_VIDEO: /recorded/astrolearner-nasa-loop.mp4
+      ISS_LIVE_DATA_DIR: /tmp/iss-camera-data
+      ISS_LIVE_STATUS_DIR: /tmp/iss-camera-status
+      ISS_LIVE_YOUTUBE_TOKEN: /tmp/no-oauth-credentials.json
+      ISS_LIVE_SOURCE_LABEL: "Preparación aislada de cámara ISS"
+      ISS_LIVE_WIDTH: "1280"
+      ISS_LIVE_HEIGHT: "720"
+      ISS_LIVE_FPS: "12"
+      ISS_LIVE_ENCODER: libx264
+    volumes:
+      - /srv/data/appdata/astrolearner-iss-live/nasa/videos:/recorded:ro
+    cpus: 1.5
+    mem_limit: 768m
+    pids_limit: 64
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8092/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5

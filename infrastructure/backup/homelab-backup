@@ -4,42 +4,129 @@ set -Eeuo pipefail
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 umask 077
 
+[[ ${EUID} -eq 0 ]] || { echo 'Este backup requiere root.' >&2; exit 1; }
+helper=/usr/local/libexec/homelab-backup-iss.py
+[[ -f "$helper" && ! -L "$helper" && $(stat -c %u "$helper") == 0 && $(stat -c %a "$helper") == 750 ]] || {
+    echo 'Falta el helper privado de backup instalado por root (0750).' >&2; exit 1;
+}
 backup_dir="/srv/data/backups/daily"
+lock_dir=/run/homelab-backup
+for directory in "$backup_dir" "$lock_dir"; do
+    [[ ! -L "$directory" ]] || { echo 'Directorio privado de backup no valido.' >&2; exit 1; }
+    if [[ -e "$directory" ]]; then
+        [[ -d "$directory" && $(stat -c %u "$directory") == 0 && $(stat -c %a "$directory") == 700 ]] || {
+            echo 'El directorio privado de backup debe ser root:0700.' >&2; exit 1;
+        }
+    else
+        install -d -m 700 "$directory"
+    fi
+    [[ $(realpath -- "$directory") == "$directory" ]] || {
+        echo 'No se permiten enlaces en la ruta privada del backup.' >&2; exit 1;
+    }
+done
+[[ ! -L "$lock_dir/lock" ]] || exit 1
+exec 9> "$lock_dir/lock"
+flock -n 9 || { echo 'Ya hay un backup en curso.' >&2; exit 1; }
 backup_stamp=$(date -u +%Y%m%d-%H%M%S)
 archive_name="homelab-${backup_stamp}.tar.gz"
 archive="${backup_dir}/${archive_name}"
 temporary="${archive}.part"
-declare -a running_containers=()
+checksum="${archive}.sha256"
+checksum_temporary="${checksum}.part"
+for target in "$archive" "$temporary" "$checksum" "$checksum_temporary"; do
+    [[ ! -e "$target" && ! -L "$target" ]] || { echo 'El destino del backup ya existe.' >&2; exit 1; }
+done
+work=$(mktemp -d "$backup_dir/.work-XXXXXXXXXX")
+declare -a restart_pending=() bulk_containers=() dns_containers=() appdata_paths=() snapshot_paths=()
 
 restart_containers() {
-    if [ "${#running_containers[@]}" -gt 0 ]; then
-        echo "Reiniciando contenedores..."
-        /usr/bin/docker start "${running_containers[@]}" >/dev/null || true
-        running_containers=()
+    if [ "${#restart_pending[@]}" -gt 0 ]; then
+        echo 'Reiniciando los contenedores detenidos por este backup...'
+        if ! /usr/bin/docker start "${restart_pending[@]}" >/dev/null; then
+            echo 'ERROR: algun contenedor no pudo reiniciarse; revisar Docker.' >&2
+            return 1
+        fi
+        local states state count=0
+        if ! states=$(/usr/bin/docker inspect --format '{{.State.Running}}' "${restart_pending[@]}"); then
+            echo 'ERROR: no se pudo confirmar el reinicio de los contenedores.' >&2
+            return 1
+        fi
+        while IFS= read -r state; do
+            [[ "$state" == true ]] || { echo 'ERROR: un contenedor no sigue activo tras iniciarlo.' >&2; return 1; }
+            count=$((count + 1))
+        done <<< "$states"
+        [[ "$count" -eq "${#restart_pending[@]}" ]] || return 1
+        restart_pending=()
     fi
 }
 
 cleanup() {
     exit_code=$?
-    trap - EXIT
-    restart_containers
-    /bin/rm -f -- "$temporary"
+    trap - EXIT INT TERM
+    if ! restart_containers; then exit_code=1; fi
+    /bin/rm -f -- "$temporary" "$checksum_temporary"
+    # This exact root-created mktemp directory is the only recursive target.
+    if [[ "$work" =~ ^/srv/data/backups/daily/\.work-[A-Za-z0-9]+$ &&
+          -d "$work" && ! -L "$work" && $(stat -c %u "$work") == 0 &&
+          $(realpath -- "$work") == "$work" ]]; then
+        /bin/rm -rf --one-file-system -- "$work"
+    else
+        echo 'ERROR: se conserva un directorio de trabajo que requiere revision.' >&2
+        exit_code=1
+    fi
     exit "$exit_code"
 }
 
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+mkdir -m 700 "$work/snapshot"
 
-install -d -m 700 "$backup_dir"
+echo 'Planificando servicios por identidad Compose y validando volumenes...'
+python3 "$helper" plan "$work"
+python3 "$helper" preflight-space "$work"
+python3 "$helper" ids "$work" bulk > "$work/bulk.ids"
+python3 "$helper" ids "$work" dns > "$work/dns.ids"
+mapfile -t bulk_containers < "$work/bulk.ids"
+mapfile -t dns_containers < "$work/dns.ids"
 
-echo "Deteniendo servicios con datos persistentes..."
-mapfile -t running_containers < <(/usr/bin/docker ps --format '{{.Names}}')
-if [ "${#running_containers[@]}" -gt 0 ]; then
-    /usr/bin/docker stop "${running_containers[@]}" >/dev/null
+echo 'Copiando y validando datos ISS sin detener emisor, camara ni musica...'
+python3 "$helper" snapshot-iss "$work"
+echo 'Conservando solo el directorio del estado regenerable del host...'
+python3 "$helper" snapshot-status "$work"
+
+# Quiesce DNS only for its own small persistent copy, not the whole archive.
+echo 'Copiando AdGuard con una pausa limitada a su snapshot...'
+restart_pending=("${dns_containers[@]}")
+if [ "${#dns_containers[@]}" -gt 0 ]; then
+    /usr/bin/docker stop "${dns_containers[@]}" >/dev/null
 fi
+python3 "$helper" snapshot-dns "$work"
+restart_containers
+python3 "$helper" wait-dns "$work"
+
+echo 'Deteniendo los demas servicios con datos persistentes...'
+restart_pending=("${bulk_containers[@]}")
+if [ "${#bulk_containers[@]}" -gt 0 ]; then
+    /usr/bin/docker stop "${bulk_containers[@]}" >/dev/null
+fi
+python3 "$helper" verify-quiesced "$work"
+
+# Select children rather than a global tar --exclude, which would also exclude
+# staged snapshots. homelab-status contains only the regenerable five-second
+# collector cache; its empty directory/attributes are restored from the stage.
+/usr/bin/find /srv/data/appdata -mindepth 1 -maxdepth 1 \
+    ! -name astrolearner-iss-live ! -name adguardhome ! -name homelab-status -print0 > "$work/appdata.paths"
+while IFS= read -r -d '' path; do appdata_paths+=("$path"); done < "$work/appdata.paths"
+for relative in srv/data/appdata/astrolearner-iss-live srv/data/appdata/adguardhome srv/data/appdata/homelab-status; do
+    if [[ -d "$work/snapshot/$relative" ]]; then snapshot_paths+=("$relative"); fi
+done
 
 echo "Creando ${archive_name}..."
+# Root-only destination plus noclobber reservation prevents accidental reuse.
+( set -o noclobber; : > "$temporary" )
 /usr/bin/tar --acls --xattrs -czf "$temporary" \
-    /srv/data/appdata \
+    "${appdata_paths[@]}" \
     /srv/data/compose \
     /usr/local/sbin/export-homelab-temperatures \
     /usr/local/sbin/export-homelab-status \
@@ -57,19 +144,24 @@ echo "Creando ${archive_name}..."
     /etc/sysctl.d/99-tailscale.conf \
     /etc/apt/sources.list.d/tailscale.list \
     /etc/apt/apt.conf.d/52-homelab-unattended-upgrades \
-    /usr/share/keyrings/tailscale-archive-keyring.gpg
+    /usr/share/keyrings/tailscale-archive-keyring.gpg \
+    "$helper" \
+    -C "$work/snapshot" "${snapshot_paths[@]}"
 
 /bin/mv "$temporary" "$archive"
 /bin/chmod 600 "$archive"
 
 echo "Iniciando servicios..."
 restart_containers
+python3 "$helper" verify-restarted "$work"
 
 echo "Generando y verificando SHA-256..."
 (
     cd "$backup_dir"
-    /usr/bin/sha256sum "$archive_name" > "${archive_name}.sha256"
-    /bin/chmod 600 "${archive_name}.sha256"
+    set -o noclobber
+    /usr/bin/sha256sum "$archive_name" > "${archive_name}.sha256.part"
+    /bin/chmod 600 "${archive_name}.sha256.part"
+    /bin/mv "${archive_name}.sha256.part" "${archive_name}.sha256"
     /usr/bin/sha256sum -c "${archive_name}.sha256"
 )
 

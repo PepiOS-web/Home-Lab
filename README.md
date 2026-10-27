@@ -30,6 +30,30 @@ Proyecto personal para convertir un portatil reutilizado en un servidor domestic
 - Prototipo ambiental ESP8266 con DHT11 integrado en Prometheus, Grafana y Homepage.
 - Firmware ESPHome actualizable mediante OTA y secretos excluidos del repositorio.
 
+## AstroLearner y operacion preparada
+
+El repositorio incluye dos aplicaciones locales de AstroLearner y procedimientos
+de mantenimiento. Su presencia en Git no confirma que cada revision este
+activada en el servidor:
+
+- [Factory](infrastructure/docker/astrolearner-factory/README.md): borradores
+  revisables, voz y montaje local, staging separado y clips opcionales importados.
+  No incluye publicacion automatica ni un modelo de generacion de video.
+- [ISS Live](infrastructure/docker/astrolearner-iss-live/README.md): control manual,
+  metadatos editables, salud de la senal, musica y recuperacion de la misma emision
+  ante cortes de transporte. El envio adicional a Starvios es opcional.
+- [Captura de camara](infrastructure/docker/astrolearner-iss-live/BROWSER-CAMERA.md):
+  navegador aislado y comprobaciones previas; requiere validar permisos de uso,
+  disponibilidad y rendimiento de la fuente antes de emitir.
+- [Panel orbital y musica melodica](infrastructure/docker/astrolearner-iss-live/STREAM-UPGRADE.md):
+  actualizacion preparada con respaldo de mapa y activacion controlada.
+- [Backup](docs/backups.md) y [mantenimiento manual](docs/manual-maintenance.md):
+  snapshot de datos ISS para evitar detener su emisor durante la copia y
+  actualizacion conservadora de paquetes del host.
+
+El [registro del 27 de octubre](docs/journal/2026-10-27-astrolearner-y-operacion.md)
+resume los cambios y las comprobaciones que siguen dependiendo del servidor.
+
 ## Hardware base
 
 | Componente | Especificacion |
@@ -73,6 +97,7 @@ Los numeros de serie, credenciales, direcciones MAC y otros identificadores no s
 - [DNS local con AdGuard Home](docs/dns-local.md)
 - [Acceso remoto seguro con Tailscale](docs/remote-access.md)
 - [Actualizaciones automaticas de seguridad](docs/automatic-security-updates.md)
+- [Mantenimiento manual del host](docs/manual-maintenance.md)
 - [Sensor ambiental ESP8266](docs/environmental-sensor.md)
 - [Adaptador local endurecido A9/V720](infrastructure/docker/a9-v720-hardened/README.md)
 

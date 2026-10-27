@@ -77,6 +77,11 @@ def create_music_preview(music_path: Path, status_dir: Path) -> None:
 </body>
 </html>
 """
+        if music_path.name == "astrolearner-lofi-hour-v1.wav":
+            page = page.replace(
+                "Muestra de 90 segundos · Rhodes suave · sin ruido blanco",
+                "Muestra de 90 segundos · sesión de una hora · 12 temas originales Lo-Fi",
+            )
         page_path.write_text(page, encoding="utf-8")
     except (OSError, subprocess.SubprocessError) as exc:
         temp_path.unlink(missing_ok=True)

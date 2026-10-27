@@ -11,6 +11,9 @@
 id_ed25519
 id_ed25519.pub
 authorized_keys
+secrets/
+youtube-token.json
+youtube-token-*.json
 
 # Backups and generated files
 *.bak
@@ -22,6 +25,19 @@ authorized_keys
 *.db
 *.sqlite
 *.sqlite3
+*.zip
+.before-*/
+*.before-*
+
+# Local reports, generated media and private deployment bundles
+/output/
+/tmp/
+/live-camera-deploy/
+/live-health-deploy/
+/live-lofi-hour/
+/live-portal-metadata-deploy/
+/live-rate-limit-fix/
+/auditoria-ghidra.md
 
 # Editors and operating systems
 .vscode/
@@ -33,6 +49,8 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 .venv/
+.pytest_cache/
+.ruff_cache/
 
 # Runtime data
 data/

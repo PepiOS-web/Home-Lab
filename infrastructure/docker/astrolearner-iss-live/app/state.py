@@ -4,7 +4,7 @@ import json
 import os
 import tempfile
 import threading
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -29,10 +29,38 @@ class LiveState:
     bitrate: str = "0 kbit/s"
     fps: float = 0.0
     dropped_frames: int = 0
+    ffmpeg_running: bool = False
+    ffmpeg_frame_count: int = 0
+    last_frame_at: str | None = None
+    last_progress_at: str | None = None
+    ffmpeg_out_time_seconds: float | None = None
+    position_updated_at: str | None = None
+    youtube_lifecycle_status: str = "unknown"
+    youtube_privacy_status: str = "unknown"
+    youtube_stream_status: str = "unknown"
+    youtube_health_status: str = "unknown"
+    youtube_checked_at: str | None = None
+    youtube_health_updated_at: str | None = None
+    youtube_health_issues: list[dict[str, str]] = field(default_factory=list)
+    youtube_check_error: str = ""
     music_track: str = "AstroLearner Lo-Fi (Rhodes suave, sin ruido blanco)"
+    music_session: str = "AstroLearner Lo-Fi (Rhodes suave, sin ruido blanco)"
+    music_playback_active: bool = False
+    music_track_index: int | None = None
+    music_track_count: int = 0
+    music_track_elapsed_seconds: float | None = None
+    music_track_duration_seconds: float | None = None
+    music_session_elapsed_seconds: float | None = None
+    music_session_duration_seconds: float | None = None
     youtube_watch_url: str = ""
     last_error: str = ""
     restart_count: int = 0
+    reconnect_count: int = 0
+    last_reconnect_at: str | None = None
+    last_reconnect_reason: str = ""
+    starvios_enabled: bool = False
+    starvios_output_active: bool = False
+    starvios_remote_verified: bool = False
     updated_at: str = ""
     latitude: float | None = None
     longitude: float | None = None
@@ -40,6 +68,16 @@ class LiveState:
     velocity_kmh: float | None = None
     visual_source: str = "NASA EPIC / DSCOVR"
     visual_updated_at: str | None = None
+    camera_enabled: bool = False
+    camera_configured: bool = False
+    camera_available: bool = False
+    camera_timeout_seconds: float = 8.0
+    camera_state: str = "disabled"
+    camera_last_frame_at: str | None = None
+    video_mode: str = "recorded"
+    video_fallback_reason: str = "camera_disabled"
+    video_switch_count: int = 0
+    video_switch_at: str | None = None
 
 
 class StateStore:
