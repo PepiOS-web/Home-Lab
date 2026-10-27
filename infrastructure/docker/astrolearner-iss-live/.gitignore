@@ -1,0 +1,5 @@
+# Private rollback snapshots created by the operator-run deployment.
+.before-*/
+.browser-camera-deploy.lock
+.stream-upgrade.lock
+**/.starvios.json

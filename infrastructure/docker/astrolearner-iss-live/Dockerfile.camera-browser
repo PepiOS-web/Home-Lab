@@ -1,0 +1,22 @@
+FROM mcr.microsoft.com/playwright/python:v1.63.0-noble@sha256:72bd171a9ffc2b4b59532aaa6210e21014d07093120dc25528870c0b840da1f0
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /opt/camera
+COPY requirements.camera-browser.lock /tmp/requirements.camera-browser.lock
+RUN pip install --require-hashes -r /tmp/requirements.camera-browser.lock
+# Branded Chrome includes H.264/AAC media codecs not guaranteed in Chromium.
+# Version and digest are from Google's official Debian package index.
+RUN curl --fail --show-error --silent --location \
+        https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_155.0.8059.79-1_amd64.deb \
+        --output /tmp/camera-chrome.deb \
+    && printf '%s  %s\n' b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc /tmp/camera-chrome.deb | sha256sum --check - \
+    && apt-get update \
+    && apt-get install --yes --no-install-recommends /tmp/camera-chrome.deb \
+    && rm /tmp/camera-chrome.deb \
+    && rm -rf /var/lib/apt/lists/*
+COPY --chown=pwuser:pwuser app/browser_camera.py /opt/camera/browser_camera.py
+COPY --chown=pwuser:pwuser app/browser_snapshot.py app/browser_esa_map.py app/browser_local_map.py /opt/camera/
+COPY camera-browser-LICENSE /opt/camera/THIRD_PARTY_LICENSE
+USER pwuser
+EXPOSE 8093
+CMD ["python", "/opt/camera/browser_camera.py"]

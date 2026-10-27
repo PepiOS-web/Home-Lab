@@ -46,3 +46,19 @@
 - [ ] Nube privada de archivos y fotografias.
 - [x] Acceso remoto seguro mediante Tailscale, ruta `/32` y control de acceso por puertos.
 - [ ] Automatizaciones y servicios adicionales.
+
+## Fase 5 - AstroLearner y continuidad operativa
+
+Las casillas completadas de esta fase describen implementaciones del
+repositorio. Su activacion en el servidor se verifica por separado.
+
+- [x] Implementar Factory local con revision humana y publicacion automatica desactivada.
+- [x] Preparar staging con trabajos separados, prompts de escena y clips opcionales importados.
+- [x] Preparar recuperacion de una misma emision ante cortes de transporte y rotacion al limite del bloque.
+- [x] Incorporar metadatos editables, sesiones revocables y salud separada de video, YouTube y posicion ISS.
+- [x] Preparar captura aislada, mapas de respaldo, multistream opcional y musica precalculada.
+- [x] Implementar snapshot ISS para backup sin detener el emisor y mantenimiento manual del host.
+- [ ] Verificar el backup integral con una emision activa y restaurar sus datos en una prueba controlada.
+- [ ] Confirmar en el servidor la activacion del ultimo panel y musica, y la estabilidad prolongada de su perfil de 30 FPS.
+- [ ] Comprobar recepcion en cada destino externo y permisos vigentes de las fuentes antes de emitir.
+- [ ] Registrar la revision y reinicio planificado del host tras el mantenimiento, sin confundirlos con actualizaciones solo preparadas.

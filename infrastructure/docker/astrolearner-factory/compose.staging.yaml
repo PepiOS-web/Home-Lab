@@ -1,0 +1,50 @@
+services:
+  studio:
+    build:
+      context: .
+      args:
+        APP_UID: ${PUID:-1000}
+        APP_GID: ${PGID:-1000}
+    image: astrolearner-factory:staging
+    container_name: astrolearner-factory-staging
+    restart: "no"
+    ports:
+      - "127.0.0.1:${ASTRO_STAGING_PORT:-8091}:8090"
+    environment:
+      ASTRO_DATA_DIR: /data
+      ASTRO_MODEL_DIR: /models
+      ASTRO_OLLAMA_URL: http://ollama:11434
+      ASTRO_MODEL: ${ASTRO_MODEL:-qwen3.5:4b-q4_K_M}
+      ASTRO_CONTEXT_LENGTH: ${ASTRO_CONTEXT_LENGTH:-6144}
+      ASTRO_MAX_SOURCE_CHARS: ${ASTRO_MAX_SOURCE_CHARS:-9000}
+      ASTRO_ALLOWED_SOURCE_HOSTS: ${ASTRO_ALLOWED_SOURCE_HOSTS:-nasa.gov,esa.int,eso.org,jpl.nasa.gov,science.nasa.gov,arxiv.org}
+      ASTRO_TTS_VOICE: ${ASTRO_TTS_VOICE:-es_ES-davefx-medium}
+      ASTRO_FFMPEG_THREADS: ${ASTRO_FFMPEG_THREADS:-4}
+      ASTRO_MUSIC_ENABLED: ${ASTRO_MUSIC_ENABLED:-true}
+      ASTRO_MUSIC_VOLUME: ${ASTRO_MUSIC_VOLUME:-0.14}
+      ASTRO_LOG_LEVEL: ${ASTRO_LOG_LEVEL:-INFO}
+    volumes:
+      - ./runtime:/data
+      - /srv/data/appdata/astrolearner/voices:/models:ro
+    mem_limit: 2g
+    cpus: 4.0
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - existing_ollama
+
+networks:
+  existing_ollama:
+    external: true
+    name: ${ASTRO_SHARED_NETWORK:?Set ASTRO_SHARED_NETWORK in .env.staging}

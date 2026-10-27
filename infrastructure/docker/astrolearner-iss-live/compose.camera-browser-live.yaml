@@ -1,0 +1,20 @@
+# Production opt-in only AFTER real source + failover + capacity staging tests.
+# Merge with compose.yaml; never use the staging project to publish.
+services:
+  camera-browser:
+    extends:
+      file: compose.camera-browser.yaml
+      service: camera-browser
+    restart: unless-stopped
+    environment:
+      # One production target for the source, selector and outbound encoder.
+      ISS_BROWSER_FPS: ${ISS_LIVE_FPS:-12}
+  iss-live:
+    environment:
+      ISS_BROWSER_MAP_OVERLAY: ${ISS_BROWSER_MAP_OVERLAY:-esa}
+      ISS_LIVE_CAMERA_ENABLED: "true"
+      ISS_LIVE_CAMERA_URL: http://camera-browser:8093/camera.mjpeg
+      ISS_LIVE_CAMERA_AUTHORIZED: ${ISS_BROWSER_CAPTURE_AUTHORIZED:-false}
+    depends_on:
+      camera-browser:
+        condition: service_started

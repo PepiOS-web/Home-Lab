@@ -18,6 +18,13 @@ def main() -> None:
     state_path.unlink(missing_ok=True)
 
     settings = Settings()
+    if settings.camera_enabled:
+        raise SystemExit(
+            "El selector de cámara usa una entrada con reloj real. Este benchmark "
+            "no mide su margen de rendimiento. Ejecuta python -m app.camera_preflight "
+            "--width 1280 --height 720 para comprobar cortes sintéticos sin publicar, "
+            "y valida la fuente y los recursos en camera-staging antes de producción."
+        )
     if settings.encoder == "h264_vaapi":
         va_info = subprocess.run(
             [
@@ -52,15 +59,16 @@ def main() -> None:
     # near EOF together with -stream_loop stalls FFmpeg on this host; the live
     # command itself loops normally (verified independently with a 30s decode).
     map_url = "http://127.0.0.1:8092/map.mjpeg"
-    map_index = command.index(map_url)
-    command[map_index - 5 : map_index + 1] = [
-        "-loop",
-        "1",
-        "-framerate",
-        "30",
-        "-i",
-        str(map_frame),
-    ]
+    if map_url in command:
+        map_index = command.index(map_url)
+        command[map_index - 5 : map_index + 1] = [
+            "-loop",
+            "1",
+            "-framerate",
+            "30",
+            "-i",
+            str(map_frame),
+        ]
     test_seconds = 30
     # Measure processing throughput, not the real-time input throttle used by
     # the actual broadcast. Startup cost is also amortized across a longer run.

@@ -2,11 +2,22 @@
 
 ## Objetivo
 
-El servidor genera una copia consistente cada madrugada. Antes de archivar los
-datos registra todos los contenedores que están activos, los detiene
-temporalmente y reinicia exactamente ese mismo conjunto al terminar. Una
-funcion registrada con `trap` intenta reiniciarlos y elimina el archivo parcial
-incluso cuando el proceso falla.
+El servidor genera una copia cada madrugada. La revisión preparada el 15 de
+octubre de 2026 conserva encendidos el emisor ISS y su navegador, identificados
+por sus etiquetas Compose exactas y sus volúmenes esperados. Nunca los detiene
+para hacer el backup. El resto de las aplicaciones mantiene una copia en parada.
+
+Los archivos persistentes ISS se copian primero a un snapshot privado estable:
+se comprueban inventarios antes/después, JSON de OAuth, WAV, manifiestos y hashes
+NASA, propietarios, permisos y atributos extendidos. Si hay una generación o un
+cambio concurrente, se reintenta; si no se obtiene una copia coherente, el backup
+falla antes de detener otros servicios. No se archiva directamente el árbol ISS
+activo ni se ignoran errores de `tar` para aparentar éxito.
+
+AdGuard se detiene solo durante la copia de sus propios datos y se reinicia
+antes de comprimir el archivo general. Así no permanece sin DNS durante toda la
+copia. Una función `trap` intenta recuperar los demás contenedores que el backup
+haya detenido incluso si falla; los errores de reinicio ya no se silencian.
 
 ## Contenido
 
@@ -34,13 +45,45 @@ El estado `/var/lib/tailscale` se excluye deliberadamente porque contiene la ide
 El temporizador de systemd ejecuta `homelab-backup.service` diariamente. El script:
 
 1. Crea el directorio con permisos restrictivos.
-2. Registra y detiene todos los contenedores que estaban activos, incluyendo
-   servicios incorporados posteriormente como AstroLearner.
-3. Genera un archivo temporal comprimido.
+2. Identifica los servicios activos y sus volúmenes sin imprimir credenciales.
+   Conserva el emisor ISS y su navegador en marcha y prepara su snapshot estable.
+3. Copia AdGuard con una parada breve y lo reinicia. Detiene las otras
+   aplicaciones y genera un archivo temporal comprimido con los datos en parada
+   y los snapshots, conservando las rutas originales de restauración.
 4. Renombra el archivo solo cuando la compresion finaliza.
 5. Reinicia los contenedores.
 6. Genera y verifica una suma SHA-256.
 7. Elimina copias diarias con mas de siete dias.
+
+Se necesita instalar también el helper
+`infrastructure/backup/homelab-backup-iss.py` como
+`/usr/local/libexec/homelab-backup-iss.py`, propietario root y modo 0750. El script
+principal comprueba ese permiso antes de empezar. Se usa un lock privado bajo
+`/run/homelab-backup` para evitar ejecuciones simultáneas.
+
+El snapshot temporal queda dentro del directorio privado de copias en el HDD,
+no en el SSD: la biblioteca ISS actual ocupa unos 25 GiB. Se comprueba espacio
+libre antes de parar servicios y se limpia únicamente el directorio exacto de
+trabajo creado por `mktemp`. Esto añade lectura/escritura al backup; no equivale
+a una garantía de rendimiento del directo durante toda la operación.
+
+Se conservan música, títulos guardados, credenciales OAuth y vídeos/manifiestos
+locales. Se excluyen únicamente los contenidos regenerables de `status/` y la
+caché `nasa/epic/`, preservando directorios vacíos con sus propietarios/permisos
+para que el servicio pueda reconstruirlos. Restaurar un backup no reanuda un
+directo de YouTube ya terminado ni desactiva la política de inicio manual.
+
+También se excluye el contenido regenerable de
+`/srv/data/appdata/homelab-status`, actualizado por el recolector cada cinco
+segundos: se conserva su directorio vacío con propietario, permisos y ACL en la
+misma ruta de restauración. El script, servicio y temporizador del recolector
+siguen incluidos; no se detiene su temporizador.
+
+La instalación debe comparar el script real del servidor con la versión
+anterior conocida antes de reemplazarlo, guardar una recuperación privada y
+revisar las identidades reales. La prueba integral del próximo backup debe
+confirmar que no cambian el PID/inicio del emisor ni el identificador público de
+la emisión. Las pruebas unitarias no sustituyen esa verificación.
 
 El servicio permite hasta 90 minutos para completar el archivo y verificar su
 SHA-256. Una ejecución anterior alcanzó el límite de 30 minutos durante la

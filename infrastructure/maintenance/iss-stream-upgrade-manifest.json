@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "date": "2026-10-23",
+  "files": {
+    "app/controller.py": {
+      "before": "ee47a0003a0ac3d7a917f053fc9ea3b1128fef45bb51ebf91174b9b58aad18cc",
+      "after": "5faaf5b4a17c6e43aa8e30f8e92921e3a9ced153bb8453f3593fc3065b4dd243"
+    },
+    "app/main.py": {
+      "before": "eb8f592dc65c2100edd5961742231e066cadee0e3b6b96b4e863869b48c5f0a7",
+      "after": "01b78653d1178558e8305ee1ffaa5cd49a64c7d3a27793eee1b42d4209479082"
+    },
+    "app/control_page.py": {
+      "before": "e0a22976832d820a7145cb45c292e05670f4e903c5f2d45a858c26f01fd97a71",
+      "after": "96fa5e31b3a75f9fe7a62ac37b44ef16306494d94c48451512a0f532102f23fc"
+    },
+    "app/video_switcher.py": {
+      "before": "6502bc8af7bc5b2c0237ff1c1c98d64bee71b37a021fc55eaad2bbad4e1404f3",
+      "after": "751054db1b46789efc090d4e983af6e4123d115bd5b07666ee4dc297ccea9e29"
+    },
+    "app/browser_camera.py": {
+      "before": "8050d7f0d444efd598f66ddfd6f2204629ab124a12595893067cab4b7235c258",
+      "after": "8998a5c35d164e53d27a48eb569ab362be64f06c4b8c6390c74e4360f07bc630"
+    },
+    "app/presentation.py": {
+      "before": null,
+      "after": "96382f197d014fe1a137ad205a28a819434826b6ba268fc694481cdff7e2cc77"
+    },
+    "app/stream_dashboard.py": {
+      "before": null,
+      "after": "28355291d1c270082125500bb042c5229900ee7e387ce5202df132de46d54bdc"
+    },
+    "app/dashboard_sources.py": {
+      "before": null,
+      "after": "165e27742c28854bbb7807538d32682f48bd87d1e243617c7da66c239d1ce770"
+    },
+    "app/melodic_playlist.py": {
+      "before": null,
+      "after": "7dc1e07c2f4e4bad5faf059fa7a3005a0c5146b351925a7c4b13c68094dd7bf1"
+    },
+    "app/stream_upgrade_preflight.py": {
+      "before": null,
+      "after": "ac0c032e75d79db45660c06ee5c98d13bf747e34ea4a61edbd0b0ae0652e9522"
+    }
+  },
+  "music_sha256": "938debae7ffe005866c57fcb30d1fe5eebd7bde97940a2467f4faaa517eba2a6",
+  "music_manifest_sha256": "12e127a51adc4dd3e5c2ab5343bf70f34245422a0e6d238c19d9fc809742f725"
+}

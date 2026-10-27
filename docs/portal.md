@@ -13,7 +13,10 @@ Homepage ofrece una unica interfaz para abrir Grafana, Uptime Kuma, NetAlertX, A
 - AdGuard Home y Tailscale se incorporan como enlaces simples, sin integrar sus APIs.
 - Homepage solo recibe un JSON saneado; no puede leer el journal, el socket de Docker ni el estado privado de Tailscale.
 - El control de AstroLearner usa un token aleatorio guardado en `.env`; Homepage
-  no lo recibe. La página de control lo conserva solo en la sesión de esa pestaña.
+  no lo recibe. Se introduce una vez para crear una sesión de hasta 30 días en
+  una cookie Secure/HttpOnly/SameSite=Strict limitada al control del directo.
+  No se guarda el token en localStorage/sessionStorage. La sesión es revocable
+  con «Cerrar sesión» y rotar el token invalida todas las sesiones existentes.
 - El resumen elimina IP, puertos, huellas de claves y nombres de dispositivos.
 - `HOMEPAGE_ALLOWED_HOSTS` restringe los encabezados Host a `portal.home.arpa`.
 - `disableIndexing` solicita a buscadores que no indexen la pagina.
@@ -29,7 +32,24 @@ Los archivos persistentes residen en `/srv/data/appdata/homepage` y el proyecto 
 
 Antes del primer despliegue se copian los archivos de `config/` al directorio persistente. Los enlaces utilizan nombres `*.home.arpa`; su resolucion se configura en el DNS local y no se versionan direcciones reales.
 
-El diseno usa exclusivamente CSS y JavaScript locales: una cabecera editorial monocroma, cuadriculas responsivas y tarjetas compactas. No descarga fondos, fuentes ni scripts externos.
+El diseno usa CSS y JavaScript locales: una cabecera editorial monocroma, cuadriculas responsivas y tarjetas compactas. No descarga fondos ni fuentes externos. La tarjeta opcional de camara NASA carga el reproductor externo de YouTube en el navegador; no se descarga ni retransmite el video desde el servidor.
+
+### Camara oficial ISS de NASA
+
+La tarjeta `Cámara ISS · NASA` integra el video enlazado actualmente desde
+`https://eol.jsc.nasa.gov/ESRS/HDEV/`, con reproduccion manual y formato 16:9.
+Es una visualizacion externa independiente: no alimenta el encoder, la musica
+ni la emision de AstroLearner y no activa el selector experimental de camara.
+El navegador contacta directamente con YouTube y sus proveedores de medios;
+la disponibilidad, posibles avisos y material de respaldo dependen de NASA y
+YouTube. Si falla, el titulo de la tarjeta abre la pagina oficial de NASA.
+
+Solo el iframe utiliza `strict-origin-when-cross-origin` para identificar el
+origen ante YouTube sin enviar rutas del portal. No se relajan las cabeceras
+globales de Caddy, la autenticacion ni la exposicion de red. No utiliza OAuth,
+claves, APIs de Google ni herramientas de extraccion. Si NASA sustituye el video,
+verificar el nuevo enlace en su pagina y actualizar tambien la regla CSS
+especifica. Comprobar reproduccion real desde el portal HTTPS: HTTP 200 no basta.
 
 El grupo `Panel operativo` permanece plegado inicialmente. Al abrirlo, carga el dashboard autenticado con un intervalo relativo de seis horas y actualizacion automatica cada minuto.
 
@@ -41,7 +61,7 @@ El temporizador `homelab-status.timer` genera un resumen con actividad SSH de la
 
 El control del directo se sirve como una página estática dentro del portal. Caddy
 reenvía únicamente `/iss-live/control/*` al servicio local; el backend exige el
-token de control y el origen `https://portal.home.arpa` para las operaciones
+token de control o una sesión válida, y el origen `https://portal.home.arpa` para las operaciones
 POST. La página confirma expresamente el inicio público y permite detener la
 emisión. `ISS_LIVE_AUTO_START=false` protege frente a reinicios: el servicio
 vuelve a simulación hasta que alguien pulse «Iniciar emisión pública». El modo

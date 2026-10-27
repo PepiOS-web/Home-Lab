@@ -11,10 +11,13 @@ El flujo implementado es:
 tema + 1-5 fuentes permitidas
         |
         v
-captura de fuentes -> guion JSON mediante Ollama -> revisión humana
+captura de fuentes -> guion JSON + prompts de escena mediante Ollama -> revisión humana
+        |                                                     |
+        |                                          clips IA opcionales importados
         |
         v
-Piper TTS -> ilustraciones Pillow + música original -> vídeo + 3 Shorts + SRT
+Piper TTS -> clips breves opcionales + ilustraciones Pillow + música original
+        -> vídeo largo + 3 Shorts existentes + Short literal derivado + SRT
         |
         v
 revisión humana -> borrador aprobado (sin subida ni publicación)
@@ -26,8 +29,17 @@ Componentes:
 - FastAPI y SQLite para el panel, cola secuencial y trazabilidad.
 - Piper con la voz española `es_ES-davefx-medium`.
 - FFmpeg y Pillow para generar ilustraciones científicas originales, música
-  ambiental procedural, el vídeo 16:9, tres Shorts 9:16 con ángulos distintos,
-  subtítulos y miniatura.
+  ambiental procedural, el vídeo 16:9, los tres Shorts 9:16 existentes con
+  ángulos distintos, subtítulos y miniatura. En vídeos de 120 segundos o más,
+  intenta añadir por separado un Short vertical con un fragmento continuo
+  literal del guion largo; no sustituye a los tres Shorts actuales.
+- Ollama genera un `video_prompt_en` opcional por segmento. El usuario puede
+  pegarlo en un generador externo y subir manualmente un MP4 H.264 de 1–20 s.
+  Los clips son inserciones visuales opcionales; si no hay clip, se conserva el
+  render procedural actual. No existe dependencia de APIs o servicios externos.
+  La demo oficial de [LTX-2.3 en Hugging Face](https://huggingface.co/spaces/Lightricks/LTX-2-3)
+  es externa; disponibilidad, límites y condiciones pueden cambiar. El Factory
+  no depende de ella y exige revisar la licencia vigente antes de publicar clips.
 
 La aplicación descarga únicamente páginas HTTPS de una lista explícita de
 dominios científicos. Trata todo el texto descargado como datos no fiables y
@@ -71,6 +83,46 @@ sudo ./scripts/bootstrap.sh
 directorios de AstroLearner, construye la imagen local, descarga el modelo y la
 voz, y levanta los dos contenedores.
 
+## Prueba aislada de cambios
+
+Para probar una versión nueva sin reemplazar `astrolearner-factory` ni mezclar
+trabajos con sus datos, el repositorio incluye `compose.staging.yaml`. Levanta
+solo un contenedor de estudio con nombre y puerto propios, y guarda sus trabajos
+en `runtime/` dentro de la carpeta de staging. Reutiliza el Ollama
+existente y monta su voz en solo lectura; por tanto, una generación de prueba
+puede ocupar temporalmente la cola/CPU del Ollama de producción.
+
+En el servidor, después de copiar la rama de prueba a un directorio separado:
+
+```bash
+cd /srv/data/compose/astrolearner-factory-staging
+cp staging.env.example .env.staging
+sudo docker inspect --format='{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{println}}{{end}}' astrolearner-ollama
+```
+
+Pon en `ASTRO_SHARED_NETWORK` de `.env.staging` el nombre de red que devolvió
+el último comando. Verifica también que `ASTRO_STAGING_PORT` no esté ocupado y
+que `ASTRO_MODEL` coincida con el modelo ya descargado y `PUID`/`PGID` con el
+usuario del contenedor actual. No copies el `.env` de producción; el fichero de
+staging solo contiene configuración local y queda excluido del build. Crea solo
+el directorio nuevo de staging:
+
+```bash
+mkdir -m 750 runtime
+sudo docker compose --project-name astrolearner-factory-staging \
+  --env-file .env.staging -f compose.staging.yaml \
+  up -d --build --wait --wait-timeout 180 studio
+curl -fsS http://127.0.0.1:8091/health
+```
+
+Abre el panel por un túnel SSH con `ssh -L 8091:127.0.0.1:8091 homelab` y
+visita `http://127.0.0.1:8091`. Crea un trabajo de al menos dos minutos, revisa
+que el borrador traiga prompts de escena, sube un MP4 opcional antes de aprobar,
+y comprueba el vídeo largo, los tres Shorts existentes y el Short derivado si
+hay un fragmento válido. Para cerrar solo el contenedor de prueba, usa
+`docker compose` con los mismos argumentos y `down`; los archivos de staging
+se conservan. No uses `down --volumes` ni borres la carpeta de datos.
+
 Para abrir el panel desde Windows sin modificar Caddy o DNS:
 
 ```powershell
@@ -86,10 +138,15 @@ Mientras esa sesión permanezca abierta, visitar
 2. Esperar la generación local. En CPU puede tardar varios minutos.
 3. Contrastar manualmente cada afirmación con las fuentes mostradas.
 4. Corregir títulos, narración, descripción o advertencias desde el editor.
-5. Aprobar el guion para iniciar el TTS y render, o rechazarlo sin borrar la
+5. Si se quiere, copiar el prompt de una escena, generar el clip fuera del
+   servidor y subirlo antes de aprobar el guion. Las subidas se limitan a 80 MiB
+   por clip y 256 MiB en total por trabajo; se validan con `ffprobe` y no se
+   aceptan URLs ni listas de reproducción.
+6. Aprobar el guion para iniciar el TTS y render, o rechazarlo sin borrar la
    trazabilidad.
-6. Ver completos el vídeo y los tres Shorts antes de aprobar el borrador.
-7. Si se actualiza el motor visual o la mezcla, usar `Volver a renderizar` sin
+7. Ver completos el vídeo largo, los tres Shorts existentes y el Short derivado
+   cuando esté disponible antes de aprobar el borrador.
+8. Si se actualiza el motor visual o la mezcla, usar `Volver a renderizar` sin
    regenerar el guion.
 
 Estados principales:
@@ -127,6 +184,9 @@ quieren conservar los resultados.
 - Qwen3.5 se distribuye bajo Apache-2.0 según su ficha oficial.
 - Piper se ejecuta como dependencia GPL-3.0.
 - La ficha de `es_ES-davefx-medium` declara CC0 para el dataset de voz.
+- Los clips MP4 aportados por el usuario quedan guardados dentro del trabajo y
+  se registran en `licenses.json`; hay que comprobar la licencia del generador
+  externo y la necesidad de declarar contenido sintético antes de publicar.
 - Las ilustraciones y la música de esta versión son originales y se generan
   localmente. `licenses.json` registra el renderizador, la semilla de la música
   y confirma que no se usaron activos de terceros.

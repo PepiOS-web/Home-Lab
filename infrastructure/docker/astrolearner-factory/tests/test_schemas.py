@@ -45,3 +45,25 @@ def test_valid_package() -> None:
     package = ContentPackage.model_validate(valid_payload())
     assert package.language == "es-ES"
     assert len(package.segments) == 3
+    assert package.derived_short is None
+
+
+def test_optional_scene_prompt_and_derived_short_round_trip() -> None:
+    payload = valid_payload()
+    payload["segments"][0]["video_prompt_en"] = (
+        "A slow cinematic orbital view, central composition, no text or logos."
+    )
+    excerpt = " ".join(["fragmento"] * 45) + "."
+    payload["derived_short"] = {
+        "title": "Fragmento de ciencia",
+        "excerpt": excerpt,
+        "segment_index": 0,
+        "source_ids": ["S1"],
+    }
+
+    package = ContentPackage.model_validate(payload)
+
+    restored = ContentPackage.model_validate_json(package.model_dump_json())
+    assert restored.segments[0].video_prompt_en == payload["segments"][0]["video_prompt_en"]
+    assert restored.derived_short is not None
+    assert restored.derived_short.excerpt == excerpt

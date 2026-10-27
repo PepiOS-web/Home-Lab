@@ -127,15 +127,29 @@
               label: Actualizado
               format: relativeDate
 
+    - Cámara ISS · NASA:
+        icon: mdi-video-outline
+        href: https://eol.jsc.nasa.gov/ESRS/HDEV/
+        description: Reproductor oficial externo; no se retransmite en AstroLearner
+        widget:
+          type: iframe
+          name: Cámara ISS oficial de NASA · visualización externa
+          src: "https://www.youtube.com/embed/awQzjn72bI0?autoplay=0&playsinline=1&rel=0"
+          classes: iss-nasa-camera
+          referrerPolicy: strict-origin-when-cross-origin
+          allowPolicy: fullscreen; picture-in-picture; encrypted-media
+          allowFullscreen: true
+          loadingStrategy: lazy
+
     - Control del directo:
         icon: mdi-youtube
         href: https://portal.home.arpa/iss-live/control.html
-        description: Inicia o detiene la emisión pública de YouTube
+        description: Inicia, detiene y edita el título y descripción de YouTube
         widget:
           type: iframe
           name: Control de AstroLearner ISS Live
           src: "https://portal.home.arpa/iss-live/control.html"
-          classes: h-64
+          classes: iss-live-control
           referrerPolicy: same-origin
           loadingStrategy: eager
 

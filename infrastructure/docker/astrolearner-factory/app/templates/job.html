@@ -30,6 +30,28 @@
         <h3>{{ segment.heading }}</h3>
         <p>{{ segment.narration }}</p>
         <p class="muted">Fuentes: {{ segment.source_ids|join(', ') }} · Visual: {{ segment.visual_direction }} · Tipo: {{ segment.visual_kind }}</p>
+        {% if segment.video_prompt_en %}
+        <details>
+          <summary>Prompt para clip de vídeo IA</summary>
+          <textarea class="tall" readonly aria-label="Prompt para escena {{ loop.index }}">{{ segment.video_prompt_en }}</textarea>
+          <p><a class="source" href="https://huggingface.co/spaces/Lightricks/LTX-2-3"
+                target="_blank" rel="noopener noreferrer">Abrir demo LTX-2.3 de Lightricks</a></p>
+          <p class="muted">Pégalo en el generador externo. Es una recreación visual, no metraje de NASA.</p>
+        </details>
+        {% endif %}
+        {% if job.status == 'script_ready' %}
+        <form method="post" enctype="multipart/form-data"
+              action="/jobs/{{ job.id }}/segments/{{ loop.index0 }}/clip">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="scene_clip_{{ loop.index0 }}">Clip opcional para esta escena (MP4 H.264, 1–20 s, máximo 80 MiB)</label>
+          <input id="scene_clip_{{ loop.index0 }}" name="clip" type="file"
+                 accept="video/mp4,.mp4" required>
+          <button class="secondary" type="submit">Subir clip para la escena {{ loop.index }}</button>
+          {% if scene_clips and scene_clips[loop.index0] %}
+          <p class="muted">Clip validado y listo. Si subes otro, reemplazará este.</p>
+          {% endif %}
+        </form>
+        {% endif %}
       </article>
       {% endfor %}
     </section>
@@ -90,6 +112,10 @@
               <option value="{{ kind }}"{% if segment.visual_kind == kind %} selected{% endif %}>{{ kind }}</option>
               {% endfor %}
             </select>
+            <label for="segment_video_prompt_{{ segment_index }}">Prompt opcional de clip IA (inglés)</label>
+            <textarea id="segment_video_prompt_{{ segment_index }}"
+                      name="segment_video_prompt_{{ segment_index }}"
+                      maxlength="1000">{{ segment.video_prompt_en or '' }}</textarea>
           </fieldset>
           {% endfor %}
 
@@ -125,12 +151,14 @@
 
     <section class="card span-12">
       <h2>Primera puerta humana</h2>
-      <p>Comprueba los hechos contra las fuentes. Al aprobar, se generarán la narración, el vídeo 16:9, tres Shorts 9:16, subtítulos y miniatura.</p>
+      <p>Comprueba los hechos contra las fuentes. Al aprobar, se generarán la narración, el vídeo 16:9, los tres Shorts actuales, subtítulos y miniatura. Si el guion tiene un fragmento adecuado, también aparecerá un Short vertical con un fragmento literal del guion largo.</p>
+      <p class="muted">Los clips subidos son inserciones breves; las escenas sin clip conservan las ilustraciones actuales. Revisa la licencia del generador y declara contenido sintético realista cuando corresponda.</p>
       <form method="post" action="/jobs/{{ job.id }}/approve-script">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <label class="check"><input type="checkbox" required> He contrastado cifras, periodos y afirmaciones con las fuentes.</label>
         <label class="check"><input type="checkbox" required> La terminología española es correcta y no contiene palabras inventadas.</label>
       <label class="check"><input type="checkbox" required> Los tres Shorts, el guion y la descripción no se contradicen.</label>
+      <label class="check"><input type="checkbox" required> Los prompts y clips opcionales son recreaciones etiquetadas correctamente y no aparentan ser metraje oficial.</label>
         <div class="actions">
           <button class="approve" type="submit">He revisado el guion: renderizar</button>
         </div>
@@ -156,6 +184,12 @@
       <video controls preload="metadata" src="/artifacts/{{ job.id }}/render/short-{{ '%02d'|format(short_index) }}.mp4"></video>
       <p><a class="button secondary" href="/artifacts/{{ job.id }}/render/short-{{ '%02d'|format(short_index) }}-es.srt">Subtítulos</a></p>
       {% endfor %}
+      {% if job.package.derived_short %}
+      <h3>Short del guion largo · {{ job.package.derived_short.title }}</h3>
+      <p class="muted">Fragmento literal del segmento {{ job.package.derived_short.segment_index + 1 }}. Se vuelve a narrar y renderizar en vertical; no es un recorte del MP4 largo.</p>
+      <video controls preload="metadata" src="/artifacts/{{ job.id }}/render/short-from-long.mp4"></video>
+      <p><a class="button secondary" href="/artifacts/{{ job.id }}/render/short-from-long-es.srt">Subtítulos del Short derivado</a></p>
+      {% endif %}
       <p><a class="button secondary" href="/artifacts/{{ job.id }}/render/thumbnail.jpg">Abrir miniatura</a></p>
     </section>
     {% endif %}
@@ -171,7 +205,7 @@
     {% if job.status in ['review_required', 'approved'] %}
     <section class="card span-12">
       <h2>Volver a renderizar</h2>
-      <p class="muted">Regenera los vídeos con el guion aprobado y la versión actual del motor visual y de audio. No publica nada.</p>
+      <p class="muted">Regenera los vídeos con el guion aprobado, los clips opcionales importados y la versión actual del motor visual y de audio. No publica nada.</p>
       <form method="post" action="/jobs/{{ job.id }}/rerender">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="secondary" type="submit">Regenerar ilustraciones y mezcla</button>

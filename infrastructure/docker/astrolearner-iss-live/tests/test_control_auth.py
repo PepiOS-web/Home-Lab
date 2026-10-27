@@ -13,6 +13,7 @@ def test_control_auth_accepts_token_only_from_portal_origin():
         ("https://attacker.example", "Bearer " + "a" * 64, 403),
         ("https://portal.home.arpa", "Bearer " + "b" * 64, 401),
         ("https://portal.home.arpa", "", 401),
+        ("https://portal.home.arpa", "Bearer contraseña", 401),
     ],
 )
 def test_control_auth_rejects_bad_origin_or_token(origin, authorization, expected_status):

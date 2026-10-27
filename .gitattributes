@@ -1,0 +1,4 @@
+# Keep Linux scripts runnable after checkouts on Windows and Linux.
+*.sh text eol=lf
+infrastructure/backup/homelab-backup text eol=lf
+infrastructure/maintenance/homelab-update text eol=lf
